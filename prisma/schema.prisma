@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  displayName String
+  role        String?
+  city        String?
+  avatarUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  agents                   Agent[]
+  sources                  SourceDocument[]
+  facts                    ProfileFact[]
+  projects                 ProfileProject[]
+  wikis                    ProfileWiki[]
+  cards                    AgentProfile[]
+  visits                   CardVisit[]
+  recommendationsForUser   RecommendationCandidate[] @relation("RecommendationForUser")
+  recommendationsForTarget RecommendationCandidate[] @relation("RecommendationForTarget")
+  sentConnections          ConnectionRequest[]       @relation("ConnectionFrom")
+  receivedConnections      ConnectionRequest[]       @relation("ConnectionTo")
+}
+
+model Agent {
+  id                 String   @id @default(cuid())
+  userId             String
+  name               String
+  understandingScore Int      @default(5)
+  currentWikiId      String?
+  currentProfileId   String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sources  SourceDocument[]
+  facts    ProfileFact[]
+  projects ProfileProject[]
+  wikis    ProfileWiki[]
+  cards    AgentProfile[]
+}
+
+model SourceDocument {
+  id               String   @id @default(cuid())
+  userId           String
+  agentId          String
+  sourceKind       String
+  sourceType       String
+  url              String?
+  title            String?
+  description      String?
+  rawText          String?
+  cleanedText      String?
+  contentHash      String?
+  fetchStatus      String   @default("manual")
+  extractionStatus String   @default("pending")
+  userNote         String?
+  errorReason      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  facts ProfileFact[]
+}
+
+model ProfileFact {
+  id               String   @id @default(cuid())
+  userId           String
+  agentId          String
+  sourceDocumentId String?
+  factType         String
+  title            String
+  summary          String?
+  evidenceText     String?
+  sourceUrl        String?
+  confidence       Float    @default(0.7)
+  visibility       String   @default("public")
+  status           String   @default("draft")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent  Agent           @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  source SourceDocument? @relation(fields: [sourceDocumentId], references: [id], onDelete: SetNull)
+}
+
+model ProfileProject {
+  id                String   @id @default(cuid())
+  userId            String
+  agentId           String
+  name              String
+  role              String?
+  summary           String
+  techStackJson     String   @default("[]")
+  linksJson         String   @default("[]")
+  sourceDocumentIds String   @default("[]")
+  status            String   @default("draft")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+}
+
+model ProfileWiki {
+  id          String   @id @default(cuid())
+  userId      String
+  agentId     String
+  version     Int
+  status      String   @default("generated")
+  contentJson String
+  markdown    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent Agent          @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  cards AgentProfile[]
+}
+
+model AgentProfile {
+  id              String    @id @default(cuid())
+  userId          String
+  agentId         String
+  wikiId          String?
+  slug            String    @unique
+  status          String    @default("ai_generated")
+  headline        String
+  bio             String
+  tagsJson        String    @default("[]")
+  skillsJson      String    @default("[]")
+  interestsJson   String    @default("[]")
+  offersJson      String    @default("[]")
+  wantsJson       String    @default("[]")
+  icebreakersJson String    @default("[]")
+  templateKey     String    @default("default")
+  visibility      String    @default("public")
+  publishedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent  Agent        @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  wiki   ProfileWiki? @relation(fields: [wikiId], references: [id], onDelete: SetNull)
+  visits CardVisit[]
+}
+
+model ConnectionRequest {
+  id         String   @id @default(cuid())
+  fromUserId String
+  toUserId   String
+  source     String
+  message    String?
+  status     String   @default("pending")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  fromUser User @relation("ConnectionFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User @relation("ConnectionTo", fields: [toUserId], references: [id], onDelete: Cascade)
+}
+
+model CardVisit {
+  id            String   @id @default(cuid())
+  profileId     String
+  visitorUserId String?
+  source        String?
+  createdAt     DateTime @default(now())
+
+  profile AgentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  visitor User?        @relation(fields: [visitorUserId], references: [id], onDelete: SetNull)
+}
+
+model RecommendationCandidate {
+  id           String   @id @default(cuid())
+  userId       String
+  targetUserId String
+  score        Int
+  reasonsJson  String
+  status       String   @default("new")
+  createdAt    DateTime @default(now())
+
+  user       User @relation("RecommendationForUser", fields: [userId], references: [id], onDelete: Cascade)
+  targetUser User @relation("RecommendationForTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+}

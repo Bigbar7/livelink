@@ -1,564 +1,736 @@
-# Livelink 实现方案
+# Livelink 技术方案：个人知识库、Wiki 与 AI 名片 MVP
 
 ## 1. 当前技术决策
 
-当前阶段采用“H5 先行 + 前后端边界可迁移小程序”方案：
+当前开发目标是支撑用户通过公开链接素材构建个人知识库，生成个人 Wiki，并从 Wiki 派生 AI 名片、搜索推荐和连接闭环，因此技术方案优先满足：
+
+- H5 移动端优先，适合微信内打开和扫码访问。
+- 个人 Wiki 是核心知识资产，AI 名片是适合扫码和社交转化的压缩展示层。
+- 低成本 Demo 身份，避免复杂登录阻塞创建流程。
+- 公开链接导入是一阶段亮点能力，首版支持用户粘贴可公开访问的 URL。
+- 链接抓取、内容清洗、AI 知识抽取、Wiki 生成都必须可降级，失败时允许用户手动补充摘要。
+- AI 生成必须有 Mock 兜底。
+- 搜索和推荐优先基于个人 Wiki 和结构化事实，先用 PostgreSQL 文本搜索与规则推荐实现。
+- 数据模型保留后续简历上传、录音转写、场景标签、LBS、向量检索和 Agent to Agent 扩展空间。
+
+首版建议：
 
 ```text
-Next.js H5 全栈 Demo
+Next.js App Router
 TypeScript
 Tailwind CSS
-Next.js API Routes / 轻量 Node API
-SQLite / Prisma
-AI API 后端调用
-H5 公开页二维码生成
-移动端优先
-后续小程序复用 API、数据模型和 Prompt
+API Routes / Server Actions
+Prisma ORM
+本地开发 SQLite，正式云端 PostgreSQL
+OpenAI / 兼容大模型 API
+fetch + cheerio / Readability 抓取和清洗公开网页
+qrcode 生成个人名片二维码
+zod 做输入校验和 AI 输出校验
+localStorage 保存当前 Demo 用户上下文
 ```
 
-当前阶段采用轻量实现，后续逐步增强：
+数据库选型原则：
 
-| 能力 | 当前实现 | 后续实现 |
-| --- | --- | --- |
-| H5 主体验 | H5 主演示 | 保留为公开页 / 分享页 |
-| 小程序主体验 | 暂以可迁移结构预留 | 正式小程序主体验 |
-| 登录身份 | Demo 用户 / 简化身份 | 微信授权登录 |
-| 后端 API | Next.js API Routes | NestJS / 独立 API 服务 |
-| 个人身份知识库 | 简化卡片字段和原始输入 | source、fact、trait、version 完整模型 |
-| 地址/场景信息 | 城市、地点名、场景类型 | 定位授权、活动位置、附近发现 |
-| 推荐系统 | Mock/规则推荐 | 标签、意图、位置、场景、连接行为综合推荐 |
+- 本地开发和极短期 Demo 可以使用 SQLite，降低初始化成本。
+- 给外部用户使用或部署到云端服务器时，必须使用 PostgreSQL，避免 SQLite 在多实例、持久化、并发写入和备份上的限制。
+- Prisma schema 设计以 PostgreSQL 为正式目标，SQLite 只作为本地开发适配。
+- 部署优先选择 `Vercel + Supabase Postgres / Neon`；如果使用自有云服务器，则采用 `Docker + PostgreSQL + Nginx/Caddy`。
 
-## 2. 为什么先用 H5 开发
+## 2. 为什么先用 H5
 
-- 产品核心场景是现实社交中的微信扫码和快速连接。
-- 小程序更贴近真实使用路径，评委更容易理解落地场景。
-- 微信内打开、分享、扫码体验更自然。
-- 后续正式上线可以延续黑客松 Demo 的交互形态。
-- H5 仍保留为备用公开页，降低现场扫码或小程序调试失败风险。
+- 个人名片链接可以直接分享和扫码访问。
+- 微信内访问、分享和二维码传播成本最低。
+- 便于快速部署和迭代。
+- 可以复用为后续小程序的公开落地页。
+- Demo 阶段需要备用链接和网页兜底。
 
 ## 3. 目标架构
 
-当前 H5 Demo 和后续小程序正式版保持同一数据与 API 主线：
-
 ```text
-微信小程序
-  ├─ 创建/编辑卡片
-  ├─ 我的二维码
-  ├─ 扫码访问
-  ├─ 请求连接
-  └─ 我的连接
+H5 Frontend
+  ├─ 首页 /
+  ├─ 快速创建 /create
+  ├─ 素材处理状态 /sources/[batchId]
+  ├─ 编辑发布 /card/edit/[id]
+  ├─ 个人名片 /u/[slug]
+  ├─ 个人 Wiki /u/[slug]/wiki
+  ├─ 搜索 /search
+  ├─ 推荐 /explore
+  ├─ 连接记录 /connections
+  └─ 我的名片 /me
 
-H5
-  ├─ 公开人物卡片页
-  ├─ 分享落地页
-  └─ 非微信环境访问页
+API Layer
+  ├─ 用户 / Demo 身份 API
+  ├─ 链接素材抓取 API
+  ├─ 知识抽取 API
+  ├─ 个人 Wiki 生成 API
+  ├─ Agent 名片生成 API
+  ├─ 名片发布和公开页 API
+  ├─ 搜索 API
+  ├─ 推荐 API
+  ├─ 连接 API
+  └─ 访问记录 API
 
-后端 API
-  ├─ AI 生成
-  ├─ 卡片 CRUD
-  ├─ 连接请求
-  ├─ 微信登录
-  └─ 推荐
+Service Layer
+  ├─ userService
+  ├─ profileService
+  ├─ sourceDocumentService
+  ├─ contentFetchService
+  ├─ knowledgeExtractionService
+  ├─ wikiGenerationService
+  ├─ aiGenerationService
+  ├─ searchService
+  ├─ recommendationService
+  ├─ connectionService
+  └─ qrCodeService
+
+Data Layer
+  ├─ users
+  ├─ source_documents
+  ├─ profile_facts
+  ├─ profile_projects
+  ├─ profile_wikis
+  ├─ agent_profiles
+  ├─ connection_requests
+  ├─ card_visits
+  └─ recommendation_candidates
 ```
-
-当前 H5 代码需要注意：
-
-- 不把 AI Key 放在小程序端。
-- AI、推荐、连接请求必须走后端 API / 云函数。
-- 类型、Prompt、数据访问尽量模块化。
-- 扫码参数使用稳定 cardId / slug。
-- 用户和卡片 ID 不硬编码。
-- H5 公开页和小程序公开页复用同一套数据结构。
 
 ## 4. 推荐项目结构
 
-黑客松阶段建议先采用 Next.js 单体，但按可迁移边界组织代码：
-
 ```text
-livelink/
+src/
   app/
     page.tsx
-    create/
-    card/[id]/edit/
-    me/
-    u/[slug]/
-    u/[slug]/connect/
-    connections/
-    explore/
+    create/page.tsx
+    sources/[batchId]/page.tsx
+    card/edit/[id]/page.tsx
+    u/[slug]/page.tsx
+    u/[slug]/wiki/page.tsx
+    search/page.tsx
+    explore/page.tsx
+    connections/page.tsx
+    me/page.tsx
     api/
-      cards/
-      connections/
-      recommendations/
-      demo/
-  src/
-    components/
-    features/
-      cards/
-      connections/
-      recommendations/
-    lib/
-      ai/
-      db/
-      qrcode/
-      mock/
-    services/
-      card-service.ts
-      connection-service.ts
-      recommendation-service.ts
-    types/
-    prompts/
-  prisma/
-    schema.prisma
-  docs/
+      health/route.ts
+      sources/import/route.ts
+      sources/[id]/route.ts
+      knowledge/extract/route.ts
+      wiki/generate/route.ts
+      agent/generate/route.ts
+      agent/publish/route.ts
+      profiles/[slug]/route.ts
+      search/route.ts
+      recommendations/route.ts
+      connections/route.ts
+  components/
+    profile/
+    forms/
+    layout/
+    qr/
+    search/
+    recommendation/
+    ui/
+  features/
+    profile/
+    onboarding/
+    search/
+    recommendation/
+    connection/
+  lib/
+    ai/
+    content-fetch/
+    knowledge/
+    wiki/
+    db/
+    demo-data/
+    qrcode/
+    validation/
+  services/
+    profile-service.ts
+    source-document-service.ts
+    content-fetch-service.ts
+    knowledge-extraction-service.ts
+    wiki-generation-service.ts
+    search-service.ts
+    recommendation-service.ts
+    connection-service.ts
+    ai-generation-service.ts
+  types/
+    profile.ts
+    recommendation.ts
+    connection.ts
 ```
 
-后续迁移小程序时，保留 `services`、`types`、`prompts`、API 和数据库模型，小程序只重做页面层。
+原则：页面只负责 UI 和路由，业务逻辑放到 `services`，方便后续迁移小程序或独立后端。
 
 ## 5. 前端设计
 
-### 5.1 前端职责
+### 5.1 页面职责
 
-H5 前端负责用户可见体验，不直接承载敏感业务逻辑：
+| 页面 | 职责 |
+| --- | --- |
+| `/` | 产品介绍、创建入口、展示价值主张 |
+| `/create` | 手动录入基础信息，并提交公开链接素材 |
+| `/sources/[batchId]` | 展示链接抓取、内容清洗和知识抽取进度，失败项允许手动补充摘要 |
+| `/card/edit/[id]` | 从个人 Wiki 派生出的 AI 名片编辑确认页，允许继续编辑所有关键信息 |
+| `/u/[slug]` | 公开个人名片页，用于扫码和分享 |
+| `/u/[slug]/wiki` | 公开个人 Wiki 页，用于深度了解用户背景、项目、技能、观点和来源 |
+| `/search` | 按关键词、标签、技能和需求搜索名片 |
+| `/explore` | 推荐对象和匹配理由 |
+| `/connections` | 连接请求和连接记录 |
+| `/me` | 我的名片、二维码、连接概览 |
 
-- 创建和编辑人物卡片。
-- 展示 AI 生成结果。
-- 展示公开人物卡片。
-- 生成和展示二维码。
-- 发起连接请求。
-- 展示连接列表。
-- 展示基础推荐 / 探索页。
+### 5.2 移动端体验要求
 
-### 5.2 页面设计
+- 首屏表达清楚“用公开素材生成你的个人 Wiki 和 AI 名片”。
+- 手动录入字段用于兜底，公开链接素材是产品亮点入口。
+- 表单字段少，优先按钮、标签、多选降低输入成本。
+- 链接抓取和 AI 提炼后必须进入编辑确认页，不能直接发布。
+- Wiki 页面必须展示 Sources，帮助用户和访问者理解内容来源。
+- 发布后的名片页要立即给用户成就感和分享欲，但模板结构需可扩展。
+- 搜索和推荐结果要突出匹配理由。
+- 所有 CTA 必须明显：生成、发布、分享、搜索、查看推荐、发起连接。
 
-```text
-/                       首页
-/create                 创建卡片
-/card/[id]/edit          AI 结果编辑
-/me                     我的卡片和二维码
-/u/[slug]               公开人物卡片
-/u/[slug]/connect       请求连接
-/connections            连接列表
-/explore                基础推荐 / 探索页
-/demo                   演示数据入口
-```
+### 5.3 状态设计
 
-### 5.3 前端分层
-
-```text
-app/                    路由和页面
-src/components/         通用 UI 组件
-src/features/cards/     卡片相关业务组件
-src/features/connections/连接相关业务组件
-src/features/recommendations/推荐相关业务组件
-src/services/           调用后端 API 的客户端封装
-src/types/              前后端共享类型
-```
-
-页面层只负责展示和交互，业务请求统一通过 `src/services` 调用，避免后续迁移小程序时把业务逻辑散落在 React 组件中。
-
-### 5.4 状态设计
-
-当前阶段建议使用轻量状态：
-
-- `localStorage` 保存当前 Demo 用户 ID。
-- 服务端数据库保存卡片、连接、推荐数据。
-- 页面数据优先通过 API 获取。
-- 表单编辑状态保留在页面组件或 feature 组件中。
-
-### 5.5 小程序迁移约束
-
-为了后续迁移小程序，H5 前端需要避免：
-
-- 业务逻辑强依赖 DOM。
-- 业务逻辑强依赖浏览器专属 API。
-- 核心数据只存在 localStorage。
-- API 返回结构只服务单个页面。
-
-后续小程序迁移时，小程序页面复用 API、类型、Prompt 和数据模型，只重做页面组件。
+- `localStorage.currentUserId`：当前 Demo 用户。
+- `localStorage.profileDraft`：名片录入草稿，防止刷新丢失。
+- `localStorage.sourceDraft`：用户粘贴的链接素材草稿。
+- 服务端数据库保存正式发布数据。
 
 ## 6. 后端设计
 
 ### 6.1 后端职责
 
-当前阶段后端可以使用 Next.js API Routes，负责所有敏感和核心业务：
+- Demo 用户创建和识别。
+- 在没有链接的情况下，仅基于手动录入信息也能生成 Wiki 和名片。
+- 抓取用户提交的公开 URL，保存原始标题、正文摘要、抓取状态和错误原因。
+- 清洗网页内容，去除脚本、导航、广告和明显噪音。
+- 调用 AI 从素材中抽取事实、项目、技能、话题、可提供能力和想认识的人。
+- 保存结构化个人知识库，并保留事实到素材来源的引用。
+- 基于知识库生成个人 Wiki。
+- 从个人 Wiki 派生 AI 名片草稿。
+- 发布公开名片主页。
+- 搜索已发布名片和公开 Wiki 摘要。
+- 生成推荐候选和推荐理由。
+- 创建连接请求和记录访问。
 
-- Demo 登录和用户身份。
-- 卡片 CRUD。
-- AI 生成人物卡片。
-- 公开卡片查询。
-- 连接请求状态流转。
-- 基础推荐计算。
-- 访问记录。
+### 6.2 API 范围
 
-AI Key、推荐规则和连接状态流转必须在服务端，不放在浏览器端。
+#### 必做 API
 
-### 6.2 服务层设计
+| API | 方法 | 说明 |
+| --- | --- | --- |
+| `/api/health` | GET | 健康检查 |
+| `/api/sources/import` | POST | 导入公开链接，抓取正文并保存 source_documents |
+| `/api/sources/:id` | GET | 查询单个素材的抓取和抽取状态 |
+| `/api/knowledge/extract` | POST | 从素材中抽取 profile_facts 和 profile_projects |
+| `/api/wiki/generate` | POST | 基于知识库生成 profile_wikis |
+| `/api/agent/generate` | POST | 基于个人 Wiki 生成名片草稿 |
+| `/api/agent/publish` | POST | 发布个人名片主页 |
+| `/api/profiles/:slug` | GET | 获取公开个人名片 |
+| `/api/search` | GET | 搜索已发布名片 |
+| `/api/recommendations` | GET | 获取推荐对象 |
+| `/api/connections` | GET/POST | 获取或创建连接请求 |
+| `/api/visits` | POST | 记录名片访问 |
 
-建议在 `src/services` 或 `src/lib/server` 中沉淀服务层：
+#### 可选 API
 
-```text
-card-service.ts
-  createCard()
-  generateCard()
-  publishCard()
-  getPublicCard()
+| API | 方法 | 说明 |
+| --- | --- | --- |
+| `/api/resume/parse` | POST | 简历上传和解析，后续迭代 |
+| `/api/audio/transcribe` | POST | 录音转写，后续迭代 |
+| `/api/scenes/join` | POST | 加入场景标签，后续迭代 |
 
-connection-service.ts
-  requestConnection()
-  acceptConnection()
-  listInbox()
-  listConnections()
-
-recommendation-service.ts
-  listRecommendations()
-  scoreCandidate()
-  buildRecommendationReason()
-
-ai-service.ts
-  generatePersonaCard()
-  parseModelJson()
-  fallbackPersonaCard()
-```
-
-API Route 只做参数校验、调用服务、返回结果，避免业务逻辑写死在路由文件里。
-
-### 6.3 后端数据流
-
-创建卡片：
-
-```text
-前端表单
-  → POST /api/cards/generate
-  → ai-service 生成结构化内容
-  → 前端编辑确认
-  → POST /api/cards
-  → card-service 保存卡片
-```
-
-公开访问：
-
-```text
-扫码打开 /u/[slug]
-  → GET /api/cards/public/:slug
-  → 记录 card_visits
-  → 返回公开字段
-```
-
-连接请求：
-
-```text
-公开卡片点击请求连接
-  → POST /api/connections/request
-  → 创建 pending 请求
-  → 卡片主人查看 inbox
-  → POST /api/connections/:id/accept
-  → 更新 accepted
-```
-
-推荐：
-
-```text
-用户进入 /explore
-  → GET /api/recommendations
-  → 读取用户卡片、城市、场景、标签
-  → 规则打分
-  → 返回推荐用户和推荐理由
-```
-
-### 6.4 后续后端迁移
-
-当前用 Next.js API Routes 是为了快。后续迁移小程序时有两种路线：
-
-- 继续复用 Next.js API，给 H5 和小程序共同调用。
-- 把服务层迁移到 NestJS / 独立 Node API，小程序和 H5 都调用同一套接口。
-
-只要服务层边界清晰，迁移成本主要在部署和鉴权，不在业务重写。
-
-
-## 7. 当前数据模型
-
-黑客松版本优先保留 5 张核心数据结构，覆盖个人信息、卡片、地址/场景、连接、访问和推荐。
+## 7. 数据模型
 
 ### 7.1 users
 
-```text
-id
-nickname
-avatar_url
-city
-identity
-current_scene
-current_location_name
-created_at
-updated_at
-```
-
-说明：
-
-- 黑客松阶段使用 Demo 登录承载用户身份。
-- 可以用浏览器 localStorage 保存当前 user_id。
-- Demo 时提供切换用户能力。
-
-### 7.2 persona_cards
-
-```text
-id
-user_id
-slug
-status
-style
-nickname
-avatar_url
-city
-identity
-scene_type
-location_name
-input_experience
-input_interests
-input_looking_for
-headline
-bio
-tags
-experience_summary
-topics_to_talk
-looking_for_summary
-icebreaker
-created_at
-updated_at
-published_at
-```
-
-说明：
-
-- `tags`、`topics_to_talk` 可以用 JSON 数组。
-- MVP 不拆 facts / traits。
-- 保留原始输入字段，方便重新生成。
-
-### 7.3 connection_requests
-
-```text
-id
-from_user_id
-to_user_id
-to_card_id
-message
-status
-source
-created_at
-accepted_at
-```
-
-说明：
-
-- `status` 只需要 `pending`、`accepted`、`ignored`。
-- `source` 先固定为 `qr` 或 `public_card`。
-
-### 7.4 card_visits
-
-```text
-id
-card_id
-visitor_user_id
-source
-created_at
-```
-
-说明：
-
-- 未登录访问者可以为空。
-- 当前阶段建议尽量落库，用于演示访问和推荐信号。
-
-### 7.5 recommendation_candidates
-
-```text
-id
-user_id
-target_user_id
-reason
-match_signals
-score
-source
-created_at
-```
-
-说明：
-
-- 当前阶段可以由 Demo 数据和规则生成。
-- `match_signals` 可包含共同标签、同城市、同场景、希望认识的人命中。
-- 如果时间紧，可先在 `/explore` 页面实时生成，后续再沉淀到表。
-
-## 8. API 范围
-
-### 8.1 必做 API
-
-```text
-POST /api/demo/login
-POST /api/cards/generate
-POST /api/cards
-GET  /api/cards/me
-GET  /api/cards/public/:slug
-PATCH /api/cards/:id
-POST /api/connections/request
-GET  /api/connections/inbox
-POST /api/connections/:id/accept
-GET  /api/connections
-GET  /api/recommendations
-```
-
-### 8.2 可选 API
-
-```text
-POST /api/cards/:id/visit
-POST /api/demo/seed
-```
-
-## 9. AI 实现方案
-
-### 9.1 当前只做一个 Prompt
-
-当前阶段只实现 `persona-card` 生成。
-
-输入：
-
-- 昵称
-- 身份
-- 城市
-- 过往经历
-- 兴趣方向
-- 希望认识的人
-- 补充信息
-
-输出：
-
-```json
-{
-  "headline": "一句话介绍",
-  "bio": "人物简介",
-  "tags": ["标签1", "标签2"],
-  "experience_summary": "经历总结",
-  "topics_to_talk": ["话题1", "话题2"],
-  "looking_for_summary": "希望认识的人",
-  "icebreaker": "破冰语"
+```ts
+type User = {
+  id: string
+  displayName: string
+  role: string
+  city?: string
+  avatarUrl?: string
+  createdAt: Date
+  updatedAt: Date
 }
 ```
 
-### 9.2 生成原则
+黑客松阶段不强制手机号或微信登录。
 
-- 内容真实，不编造经历。
-- 语气自然，适合社交展示。
-- 不要像正式简历。
-- 突出用户的特点、兴趣和可聊话题。
-- 输出结构化 JSON。
-- 用户必须能编辑 AI 内容。
+### 7.2 source_documents
 
-### 9.3 Mock 兜底
-
-AI 调用失败时，必须返回可演示结果。
-
-原因：
-
-- 黑客松现场网络可能不稳定。
-- API Key 可能限流。
-- JSON 解析可能失败。
-- 主 Demo 不能被 AI 调用阻塞。
-
-## 10. 个人身份知识库设计
-
-个人身份知识库是系统主线。当前阶段先用卡片字段和原始输入承载，后续逐步拆分成完整知识库。
-
-- 原始资料永久保留。
-- 事实和表达分离。
-- 每个结论有来源。
-- 用户拥有最终控制权。
-- 知识库优先，卡片是展示层。
-
-后续可扩展表：
-
-```text
-source_documents
-profile_facts
-fact_sources
-profile_traits
-card_versions
-recommendation_profiles
-recommendation_logs
-recommendation_feedback
-connections
-locations
-events
+```ts
+type SourceDocument = {
+  id: string
+  userId: string
+  profileId?: string
+  url: string
+  sourceType: 'github' | 'gitee' | 'portfolio' | 'blog' | 'article' | 'notion' | 'other'
+  title?: string
+  description?: string
+  rawText?: string
+  cleanedText?: string
+  contentHash?: string
+  fetchStatus: 'pending' | 'fetched' | 'failed' | 'manual'
+  extractionStatus: 'pending' | 'extracted' | 'failed' | 'manual'
+  userNote?: string
+  errorReason?: string
+  createdAt: Date
+  updatedAt: Date
+}
 ```
 
-## 11. 推荐系统方案
+### 7.3 profile_facts
 
-推荐是系统主线。当前阶段先做基础规则推荐，后续逐步升级为完整推荐系统。
-
-推荐原则：
-
-```text
-不是“猜你喜欢”，而是“为什么这个人现在值得你认识”
+```ts
+type ProfileFact = {
+  id: string
+  userId: string
+  profileId?: string
+  sourceDocumentId?: string
+  factType: 'identity' | 'skill' | 'experience' | 'project' | 'topic' | 'offer' | 'want' | 'achievement' | 'link'
+  title: string
+  summary?: string
+  evidenceText?: string
+  sourceUrl?: string
+  confidence: number
+  visibility: 'public' | 'limited' | 'private'
+  createdAt: Date
+  updatedAt: Date
+}
 ```
 
-推荐依据：
+### 7.4 profile_projects
 
-- 共同兴趣
-- 互补需求
-- 共同场景
-- 同城市 / 同地点
-- 社交意图
-- 连接路径
-
-当前轻量推荐规则：
-
-```text
-共同标签：每个 +10
-同城市：+8
-同场景 / 同活动：+20
-我的希望认识的人命中对方标签：+20
-对方希望认识的人命中我的标签：+15
-已连接：过滤
-自己：过滤
+```ts
+type ProfileProject = {
+  id: string
+  userId: string
+  profileId?: string
+  name: string
+  role?: string
+  summary: string
+  techStack: string[]
+  links: string[]
+  sourceDocumentIds: string[]
+  createdAt: Date
+  updatedAt: Date
+}
 ```
 
-推荐实现顺序：
+### 7.5 profile_wikis
 
-1. 用户发布卡片后生成推荐候选。
-2. 召回共同标签、同城市、同活动/同场景、需求互补候选人。
-3. 过滤已连接、已拒绝、未公开用户。
-4. 规则打分。
-5. Top N 调 AI 生成推荐理由。
-6. 记录推荐反馈。
-
-## 12. 环境变量
-
-当前 H5 演示阶段建议：
-
-```text
-DATABASE_URL=
-AI_PROVIDER=
-OPENAI_API_KEY=
-PUBLIC_WEB_BASE_URL=
+```ts
+type ProfileWiki = {
+  id: string
+  userId: string
+  profileId?: string
+  version: number
+  status: 'draft' | 'generated' | 'user_confirmed' | 'published'
+  contentJson: {
+    overview: {
+      headline: string
+      summary: string
+      highlights: string[]
+    }
+    projects: Array<{
+      name: string
+      role?: string
+      summary: string
+      links: string[]
+      evidenceSourceIds: string[]
+    }>
+    skills: string[]
+    topics: string[]
+    offers: string[]
+    wants: string[]
+    sources: Array<{
+      sourceDocumentId: string
+      title?: string
+      url: string
+    }>
+  }
+  markdown?: string
+  createdAt: Date
+  updatedAt: Date
+}
 ```
 
-后续小程序 / 正式后端需要：
+个人 Wiki 以 `contentJson + markdown` 形式存在：JSON 用于页面结构、搜索、推荐和后续 Agent 问答，Markdown 用于快速渲染和版本预览。
 
-```text
-JWT_SECRET=
-WECHAT_APP_ID=
-WECHAT_APP_SECRET=
-COS_SECRET_ID=
-COS_SECRET_KEY=
-COS_BUCKET=
-COS_REGION=
-PUBLIC_MINIPROGRAM_APP_ID=
+### 7.6 agent_profiles
+
+```ts
+type AgentProfile = {
+  id: string
+  userId: string
+  wikiId?: string
+  slug: string
+  status: 'draft' | 'ai_generated' | 'user_confirmed' | 'published'
+  headline: string
+  bio: string
+  tags: string[]
+  skills: string[]
+  interests: string[]
+  offers: string[]
+  wants: string[]
+  icebreakers: string[]
+  matchKeywords: string[]
+  sceneTags: string[]
+  templateKey: 'default' | 'value_card' | 'wiki_card' | 'social'
+  aiSuggestions?: Record<string, unknown>
+  userConfirmedAt?: Date
+  visibility: 'public' | 'limited'
+  createdAt: Date
+  updatedAt: Date
+  publishedAt?: Date
+}
 ```
 
-## 13. 技术风险
+### 7.7 connection_requests
+
+```ts
+type ConnectionRequest = {
+  id: string
+  fromUserId: string
+  toUserId: string
+  source: 'profile_scan' | 'search' | 'recommendation' | 'shared_link'
+  message?: string
+  status: 'pending' | 'accepted' | 'ignored'
+  createdAt: Date
+  updatedAt: Date
+}
+```
+
+### 7.8 card_visits
+
+```ts
+type CardVisit = {
+  id: string
+  profileId: string
+  visitorUserId?: string
+  source?: string
+  createdAt: Date
+}
+```
+
+### 7.9 recommendation_candidates
+
+```ts
+type RecommendationCandidate = {
+  id: string
+  userId: string
+  targetUserId: string
+  score: number
+  reasons: string[]
+  status: 'new' | 'viewed' | 'connected' | 'dismissed'
+  createdAt: Date
+}
+```
+
+### 7.10 后续场景标签模型
+
+```ts
+type SceneTag = {
+  id: string
+  code: string
+  name: string
+  type: 'event' | 'location' | 'community' | 'custom'
+}
+
+type ProfileSceneTag = {
+  id: string
+  profileId: string
+  sceneTagId: string
+  source: 'manual' | 'qr' | 'admin'
+  createdAt: Date
+}
+```
+
+场景标签用于后续活动、LBS 和同场景推荐，不作为当前 MVP 的主路径。
+
+## 8. AI 知识抽取与 Wiki 生成方案
+
+### 8.1 知识抽取输入
+
+```ts
+type KnowledgeExtractInput = {
+  displayName: string
+  role: string
+  city?: string
+  intro?: string
+  sourceDocuments: Array<{
+    id: string
+    url: string
+    title?: string
+    cleanedText?: string
+    userNote?: string
+  }>
+}
+```
+
+### 8.2 知识抽取输出 JSON Schema
+
+```json
+{
+  "facts": [
+    {
+      "factType": "skill",
+      "title": "AI 应用开发",
+      "summary": "基于公开项目和文章判断用户长期关注 AI 应用开发",
+      "evidenceText": "来源中的短证据片段",
+      "sourceDocumentId": "src_123",
+      "confidence": 0.86
+    }
+  ],
+  "projects": [
+    {
+      "name": "Livelink",
+      "role": "Builder",
+      "summary": "AI 个人 Wiki 与社交名片产品",
+      "techStack": ["Next.js", "AI"],
+      "links": ["https://..."],
+      "sourceDocumentIds": ["src_123"]
+    }
+  ]
+}
+```
+
+### 8.3 Wiki 输出 JSON Schema
+
+```json
+{
+  "overview": {
+    "headline": "一句话个人定位",
+    "summary": "基于素材和事实生成的个人 Wiki 概览",
+    "highlights": ["代表性经历", "长期关注方向", "可连接价值"]
+  },
+  "projects": [],
+  "skills": ["技能"],
+  "topics": ["关注话题"],
+  "offers": ["我能提供"],
+  "wants": ["我想认识"],
+  "sources": []
+}
+```
+
+### 8.4 名片输出 JSON Schema
+
+```json
+{
+  "headline": "一句话价值定位",
+  "bio": "80-140 字个人介绍",
+  "tags": ["AI", "创业", "后端"],
+  "skills": ["技能标签"],
+  "interests": ["兴趣标签"],
+  "offers": ["我能提供的资源、能力或经验"],
+  "wants": ["我想认识的人或需求"],
+  "icebreakers": ["适合开启聊天的话题"],
+  "matchKeywords": ["用于搜索推荐的关键词"]
+}
+```
+
+### 8.5 生成原则
+
+- 不编造教育、公司、融资、奖项等事实。
+- 可以优化表达，但不能改变用户原意。
+- Wiki 中的重要结论必须能追溯到素材来源或用户手动输入。
+- 名片输出要适合别人快速理解和主动连接。
+- 强调价值、需求、可聊话题和匹配线索。
+- 内容必须可编辑，用户确认后才发布。
+
+### 8.6 Mock 兜底
+
+AI 调用失败时，根据用户输入和素材标题规则生成：
+
+- headline：身份 + 项目方向 + 价值点。
+- bio：用模板整合角色、技能、方向和需求。
+- tags：合并技能、兴趣、方向关键词。
+- icebreakers：根据项目方向和 wants 生成 3 条。
+- matchKeywords：技能 + wants + interests。
+
+## 9. 创建输入优先级
+
+创建流程必须遵循：
+
+```text
+manualInput required
+publicLinks recommended
+manualSourceSummary fallback
+```
+
+后端生成个人 Wiki 和名片时以手动录入信息为最低可用输入。公开链接是核心亮点入口，但链接抓取失败不能阻塞用户继续创建。
+
+## 10. 公开链接素材抓取方案
+
+### 10.1 支持链接
+
+- GitHub / Gitee：优先读取仓库名称、描述、README 和语言。
+- 个人网站 / 作品集 / 博客 / 文章：抓取 title、meta description 和正文。
+- Notion / 飞书公开页：能公开访问则按普通网页处理。
+- 小红书等强限制平台：首版保存链接和用户补充说明，不承诺自动抓取。
+
+### 10.2 内容清洗原则
+
+- 设置抓取超时和正文长度上限。
+- 移除 script、style、nav、footer、广告和明显重复文本。
+- 保存 `rawText` 和 `cleanedText`，但公开页面默认只展示摘要和来源链接。
+- 记录 `contentHash`，避免重复抓取同一内容。
+
+### 10.3 安全与降级原则
+
+- 只支持 `http` / `https` 公开 URL。
+- 禁止抓取内网地址、本机地址和非网页协议。
+- 链接抓取失败标记为 `failed/manual`，允许用户手动补充摘要。
+- 用户手动补充摘要也会作为 `source_documents.userNote` 进入知识抽取。
+
+### 10.4 链接导入输出
+
+```ts
+type SourceImportResult = {
+  url: string
+  sourceType: SourceDocument['sourceType']
+  title?: string
+  description?: string
+  cleanedText?: string
+  fetchStatus: 'fetched' | 'manual' | 'failed'
+  reason?: string
+}
+```
+
+## 11. 搜索方案
+
+MVP 先做 PostgreSQL 文本搜索和标签搜索：
+
+- 关键词匹配 Wiki overview、projects、skills、topics、offers、wants、名片 headline、bio、tags、matchKeywords。
+- 支持标签筛选。
+- 支持按城市筛选。
+- 默认只搜索已发布公开名片。
+- 搜索结果按匹配字段数量、关键词命中位置和更新时间排序。
+- 后续扩展 embeddings + pgvector，用于语义搜索和 Agent 问答。
+
+## 12. Wiki 与名片编辑确认
+
+### 12.1 编辑确认原则
+
+- AI 生成结果只作为草稿，不直接发布。
+- 用户可以编辑 Wiki 的 overview、projects、skills、topics、offers、wants 和 sources 展示状态。
+- 用户可以编辑名片的 headline、bio、tags、skills、interests、offers、wants、icebreakers。
+- 从素材提炼出的项目、兴趣、需求和观点必须允许删除或改写。
+- 发布时保存用户确认后的内容，同时可保留 AI 建议用于后续优化。
+
+### 12.2 展示模板原则
+
+- MVP 使用 `default` 模板。
+- 不在当前阶段锁死最终个人名片展示形态。
+- 数据层通过 `templateKey` 预留模板切换能力。
+- 后续可扩展 Wiki 深度页、价值名片、简历主页、社交破冰、Agent 对话等展示方式。
+
+## 13. 推荐系统方案
+
+MVP 阶段基于个人 Wiki 和名片字段做规则匹配，不做复杂算法。
+
+### 13.1 打分规则
+
+| 规则 | 分数 |
+| --- | --- |
+| wants 命中对方 offers/skills | +30 |
+| 技能互补 | +25 |
+| 共同 Wiki topics / projects | +15 |
+| 标签相同 | +10 |
+| 同城市 | +5 |
+| 同场景标签 | +5 |
+| 已连接或本人 | 过滤 |
+
+### 13.2 技能互补示例
+
+- 产品 ↔ 前端 / 后端 / AI 工程师。
+- 设计 ↔ 前端 / 产品。
+- 创业者 ↔ 增长 / 投资 / 技术。
+- AI 应用 ↔ 模型接入 / 后端 / 数据。
+
+### 13.3 推荐理由模板
+
+```text
+你正在寻找 {userWant}，对方擅长 {targetSkill}，并且也关注 {commonTopic}，适合从 {icebreaker} 开始交流。
+```
+
+## 14. 二维码和链接设计
+
+### 14.1 个人名片二维码
+
+- 指向 `/u/[slug]`。
+- 用于个人主页分享和扫码认识对方。
+- 主页需记录访问来源。
+
+### 14.2 分享链接
+
+链接参数建议：
+
+```text
+/u/jane-ai-builder?source=profile_qr
+/u/jane-ai-builder?source=shared_link
+```
+
+## 15. 后续扩展预留
+
+### 15.1 多源信息整合
+
+- 简历上传解析，并作为 source_documents 的一种来源。
+- 录音转写。
+- GitHub / Gitee / 小红书 / 作品集深度解析。
+- 用户手动补充事实和经历。
+- 每个事实保留来源引用和置信度。
+
+### 15.2 分层授权
+
+后续将 `profile_facts`、`profile_wikis` 和 `agent_profiles` 拆分为公开资料、定向资料和私密知识库：
+
+- `public_facts`：公开展示。
+- `limited_facts`：授权对象可见。
+- `private_facts`：仅用户和 Agent 使用。
+
+### 15.3 场景标签
+
+场景标签用于表达“这个名片出现在某个活动、地点或社区”，比如黑客松、校园、咖啡聊天等。已有名片加入某个场景时，只增加标签和推荐上下文，不重新创建名片。
+
+### 15.4 Agent to Agent
+
+- Agent 基于个人 Wiki 和用户需求互相交换摘要。
+- 系统输出匹配价值判断。
+- 用户确认后转为真实连接。
+
+## 16. 环境变量
+
+```text
+DATABASE_URL="file:./dev.db"
+AI_API_KEY=""
+AI_BASE_URL=""
+AI_MODEL=""
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+```
+
+正式云端部署时：
+
+```text
+DATABASE_URL="postgresql://..."
+NEXT_PUBLIC_APP_URL="https://your-domain.com"
+```
+
+## 17. 技术风险
 
 | 风险 | 应对 |
 | --- | --- |
-| AI 输出不稳定 | 使用 JSON schema 校验和 Mock 兜底 |
-| 扫码失败 | 准备 H5 公开 URL 和本地 Demo 数据备用 |
-| 数据库迁移拖慢进度 | 先用简化 schema |
-| H5 备用页重复实现 | 公开页只读展示，复用同一数据结构 |
-| 后续小程序迁移成本 | 页面层和业务服务层分离，API 数据结构稳定 |
-
+| 微信内兼容问题 | 全程移动端和微信内真机测试 |
+| AI JSON 解析失败 | 强 Schema、try/catch、Mock fallback |
+| 链接抓取失败 | 标记 failed/manual，允许用户手动补充摘要 |
+| 小红书抓取受限 | MVP 不承诺自动抓取，保存链接和用户说明 |
+| AI 抽取编造事实 | 要求 evidenceSourceId，低置信度事实进入编辑确认，不自动发布 |
+| 数据库接入拖慢 | 开发期可先 SQLite，正式部署前切 PostgreSQL，保持 Prisma 和 API 边界不变 |
+| 二维码无法访问本地 | 使用公网部署或内网穿透，准备公开链接 |
+| 录入提交失败 | localStorage 草稿 + 重试 |
+| 推荐为空 | 预置 Demo 用户和规则 fallback |
