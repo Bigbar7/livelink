@@ -9,6 +9,7 @@ export const createAgentSchema = z.object({
 
 export const addSourceSchema = z
   .object({
+    userId: z.string().min(1),
     agentId: z.string().min(1),
     sourceKind: z.enum(['manual', 'resume', 'link']),
     sourceType: z.string().min(1),
@@ -19,4 +20,8 @@ export const addSourceSchema = z
   })
   .refine((value) => value.rawText || value.url || value.userNote, {
     message: 'Provide rawText, url, or userNote'
+  })
+  .refine((value) => value.sourceKind !== 'link' || Boolean(value.url), {
+    message: 'Link sources require url',
+    path: ['url']
   });
