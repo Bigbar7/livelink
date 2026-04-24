@@ -1,5 +1,5 @@
 import { notFound, ok, serverError } from '@/lib/http';
-import { mockAiClient } from '@/services/ai/mock-ai-client';
+import { defaultAiClient } from '@/services/ai/default-ai-client';
 import { extractKnowledgeFromSource } from '@/services/knowledge-service';
 
 type RouteContext = {
@@ -10,7 +10,7 @@ export async function POST(_request: Request, context: RouteContext) {
   const { sourceId } = await context.params;
 
   try {
-    return ok(await extractKnowledgeFromSource(sourceId, mockAiClient));
+    return ok(await extractKnowledgeFromSource(sourceId, defaultAiClient));
   } catch (error) {
     if (error instanceof Error && error.message.includes('No SourceDocument found')) {
       return notFound('Source not found');

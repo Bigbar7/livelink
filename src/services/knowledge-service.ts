@@ -99,3 +99,18 @@ export async function confirmFact(factId: string) {
     });
   });
 }
+
+export async function confirmAgentKnowledge(agentId: string) {
+  const [facts, projects] = await prisma.$transaction([
+    prisma.profileFact.updateMany({
+      where: { agentId, status: 'draft' },
+      data: { status: 'confirmed' }
+    }),
+    prisma.profileProject.updateMany({
+      where: { agentId, status: 'draft' },
+      data: { status: 'confirmed' }
+    })
+  ]);
+
+  return { factsConfirmed: facts.count, projectsConfirmed: projects.count };
+}

@@ -47,3 +47,11 @@ export async function getPublicProfile(slug: string) {
     where: { slug, status: 'published' }
   });
 }
+
+export async function listPublishedProfiles(limit = 20) {
+  return prisma.agentProfile.findMany({
+    where: { status: 'published' },
+    orderBy: { updatedAt: 'desc' },
+    take: limit
+  });
+}
