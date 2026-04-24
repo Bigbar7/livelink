@@ -20,6 +20,7 @@ html,
 body {
   margin: 0;
   min-height: 100%;
+  overflow-x: hidden;
   color: var(--ink);
   background:
     radial-gradient(circle at 10% 8%, rgb(217 255 85 / 42%), transparent 25rem),
@@ -117,6 +118,8 @@ button {
   height: calc(100% - 90px);
   padding: 8px 18px 118px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   scrollbar-width: none;
 }
 
@@ -131,6 +134,15 @@ button {
 .home-screen {
   height: calc(100% - 34px);
   position: relative;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  padding-bottom: 34px;
+}
+
+.home-screen::-webkit-scrollbar {
+  display: none;
 }
 
 .home-orbit {
