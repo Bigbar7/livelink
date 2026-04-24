@@ -32,6 +32,12 @@ type GeneratedAgentResponse = {
   profile: AgentProfile;
 };
 
+type CurrentSessionResponse = {
+  user: { id: string; displayName: string };
+  agent: { id: string; name: string } | null;
+  profile: AgentProfile | null;
+} | null;
+
 type RecommendationItem = {
   profile: AgentProfile;
   score: number;
@@ -97,6 +103,11 @@ async function readApi<T>(url: string, init?: RequestInit) {
       ...init?.headers
     }
   });
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
+    throw new Error(`接口返回异常：${response.status}`);
+  }
+
   const body = (await response.json()) as ApiResponse<T>;
   if (!response.ok || !body.ok || !body.data) {
     throw new Error(body.error?.message || 'Request failed');
@@ -119,6 +130,7 @@ export function AgentCreator() {
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateView | null>(null);
   const [findQuery, setFindQuery] = useState('我在做 AI 社交名片，想找一位懂嵌入式硬件和供应链的工程师做队友。');
   const [error, setError] = useState('');
+  const [isBooting, setIsBooting] = useState(true);
 
   const profile = generated?.profile;
   const tags = parseJsonList(profile?.tagsJson);
@@ -135,9 +147,29 @@ export function AgentCreator() {
   }, [fileName, linkText, mode, pasteText]);
 
   useEffect(() => {
-    readApi<AgentProfile[]>('/api/profiles?limit=12')
-      .then(setResidentProfiles)
-      .catch(() => setResidentProfiles([]));
+    Promise.allSettled([
+      readApi<CurrentSessionResponse>('/api/me'),
+      readApi<AgentProfile[]>('/api/profiles?limit=12')
+    ]).then(([sessionResult, profilesResult]) => {
+      if (profilesResult.status === 'fulfilled') {
+        setResidentProfiles(profilesResult.value);
+      }
+
+      if (sessionResult.status === 'fulfilled' && sessionResult.value?.agent && sessionResult.value.profile) {
+        const session = sessionResult.value;
+        const { agent: restoredAgent, profile: restoredProfile } = session;
+        if (!restoredAgent || !restoredProfile) return;
+        setNickname(session.user.displayName);
+        setGenerated({
+          user: session.user,
+          agent: restoredAgent,
+          profile: restoredProfile
+        });
+        setStep('card');
+      }
+
+      setIsBooting(false);
+    });
   }, []);
 
   const startCreate = () => setShowNameModal(true);
@@ -227,6 +259,21 @@ export function AgentCreator() {
     <main className={`app-shell step-${step}`}>
       <div className="phone">
         <div className={`screen ${step === 'generating' || step === 'share' ? 'dark' : ''} ${showBottomNav ? 'has-bottom-nav' : ''}`}>
+          {isBooting && (
+            <section className="generating-screen">
+              <div className="content">
+                <h2 className="page-title">
+                  正在恢复
+                  <br />
+                  <mark>你的 Agent</mark>
+                </h2>
+                <p className="muted light">如果你之前生成过 Agent，我们会自动带你回到名片页。</p>
+              </div>
+            </section>
+          )}
+
+          {!isBooting && (
+            <>
           {step === 'home' && (
             <section className="home-screen">
               <div className="topbar">
@@ -292,14 +339,11 @@ export function AgentCreator() {
                 {mode === 'text' && (
                   <>
                     <div className="voice-panel compact-voice">
-                      <div className={`record-ring small ${isRecording ? 'recording' : ''}`}>REC</div>
-                      <div>
-                        <b>语音录入一段话</b>
-                        <p>说完后会自动转成文本，你也可以继续编辑。</p>
-                        <button className="primary-action lime" onClick={mockRecord}>
-                          {isRecording ? '结束录入' : '语音转文字'}
-                        </button>
-                      </div>
+                      <span className={`record-dot ${isRecording ? 'recording' : ''}`} />
+                      <b>可选：语音转文字</b>
+                      <button className="primary-action lime" onClick={mockRecord}>
+                        {isRecording ? '结束' : '试用'}
+                      </button>
                     </div>
                     <div className="paste-panel">
                       <textarea value={pasteText} onChange={(event) => setPasteText(event.target.value)} />
@@ -530,6 +574,8 @@ export function AgentCreator() {
           )}
 
           {showBottomNav && <BottomNav currentStep={step} onNavigate={setStep} />}
+            </>
+          )}
         </div>
       </div>
     </main>

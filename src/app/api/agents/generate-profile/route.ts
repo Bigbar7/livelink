@@ -1,7 +1,10 @@
 import { badRequest, ok, serverError } from '@/lib/http';
+import { createSessionCookie } from '@/lib/session';
 import { defaultAiClient } from '@/services/ai/default-ai-client';
 import { generateAgentProfile } from '@/services/agent-generation-service';
 import { z } from 'zod';
+
+export const runtime = 'nodejs';
 
 const generateAgentProfileSchema = z.object({
   displayName: z.string().min(1).max(40),
@@ -36,7 +39,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    return ok(await generateAgentProfile(parsed.data, defaultAiClient));
+    const data = await generateAgentProfile(parsed.data, defaultAiClient);
+    const response = ok(data);
+    const sessionCookie = createSessionCookie(data.user.id);
+    response.cookies.set(sessionCookie.name, sessionCookie.value, sessionCookie.options);
+    return response;
   } catch (error) {
     return serverError(error instanceof Error ? error.message : 'Agent generation failed');
   }

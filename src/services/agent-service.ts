@@ -51,3 +51,28 @@ export async function getMyAgentState(userId: string) {
     currentCard
   };
 }
+
+export async function getCurrentUserSession(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return null;
+
+  const agent = await prisma.agent.findFirst({
+    where: { userId },
+    orderBy: { updatedAt: 'desc' }
+  });
+
+  if (!agent) {
+    return { user, agent: null, profile: null };
+  }
+
+  const profile = await prisma.agentProfile.findFirst({
+    where: {
+      userId,
+      agentId: agent.id,
+      status: 'published'
+    },
+    orderBy: { updatedAt: 'desc' }
+  });
+
+  return { user, agent, profile };
+}

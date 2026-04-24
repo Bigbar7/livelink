@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { prisma } from '@/lib/db';
-import { createAgent, getMyAgentState } from '@/services/agent-service';
+import { createAgent, getCurrentUserSession, getMyAgentState } from '@/services/agent-service';
 
 describe('agent-service', () => {
   beforeEach(async () => {
@@ -39,5 +39,26 @@ describe('agent-service', () => {
     expect(state.understandingScore).toBe(5);
     expect(state.counts).toEqual({ sources: 0, confirmedFacts: 0, projects: 0 });
     expect(state.currentCard).toBeNull();
+  });
+
+  it('restores the latest agent and published profile for a returning user', async () => {
+    const created = await createAgent({ displayName: 'Jun' });
+    const profile = await prisma.agentProfile.create({
+      data: {
+        userId: created.user.id,
+        agentId: created.agent.id,
+        slug: 'jun-agent',
+        status: 'published',
+        headline: 'Jun · AI Product Builder',
+        bio: '用 AI 生成个人价值名片'
+      }
+    });
+
+    const session = await getCurrentUserSession(created.user.id);
+
+    if (!session || !session.agent) throw new Error('Expected session with agent');
+    expect(session.user.id).toBe(created.user.id);
+    expect(session.agent.id).toBe(created.agent.id);
+    expect(session.profile?.id).toBe(profile.id);
   });
 });
