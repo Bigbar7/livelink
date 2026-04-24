@@ -227,8 +227,6 @@ export function AgentCreator() {
     <main className={`app-shell step-${step}`}>
       <div className="phone">
         <div className={`screen ${step === 'generating' || step === 'share' ? 'dark' : ''} ${showBottomNav ? 'has-bottom-nav' : ''}`}>
-          <StatusBar label={step === 'home' ? 'Livelink' : nickname || 'Agent'} />
-
           {step === 'home' && (
             <section className="home-screen">
               <div className="topbar">
@@ -567,16 +565,6 @@ function ResidentProfiles({ profiles }: { profiles: AgentProfile[] }) {
 
 function buildIcebreaker(nickname: string, candidate: CandidateView, offers: string[]) {
   return `你好${candidate.name}，我是 ${nickname || 'Jun'}。我刚在 Livelink 生成了自己的 Agent 名片，看到你在 ${candidate.tags[0] ?? candidate.role} 方向有相关经验，感觉我们可以聊聊「${candidate.topic}」。我这边能提供 ${offers.slice(0, 2).join('、') || '产品和 AI 应用落地经验'}，这是我的 Agent 名片：livelink.app/u/${nickname || 'jun'}-agent`;
-}
-
-function StatusBar({ label }: { label: string }) {
-  return (
-    <div className="status">
-      <span>9:41</span>
-      <span>{label}</span>
-      <span>100%</span>
-    </div>
-  );
 }
 
 function Header({ title, action }: { title: string; action: string }) {
