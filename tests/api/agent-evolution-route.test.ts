@@ -64,7 +64,7 @@ describe('POST /api/agents/evolve', () => {
   });
 
   it('updates an existing agent profile from evolution text', async () => {
-    const initial = await generateAgentProfile({ displayName: 'Jun', text: '我在做 AI 社交名片。' }, mockAiClient);
+    const initial = await generateAgentProfile({ displayName: 'Jun', contact: 'wx_jun7', text: '我在做 AI 社交名片。' }, mockAiClient);
     const response = await POST(new Request('http://localhost/api/agents/evolve', {
       method: 'POST',
       body: JSON.stringify({

@@ -80,7 +80,7 @@ describe('POST /api/agents/evolution-chat', () => {
   });
 
   it('asks the real AI client to reply with current profile context', async () => {
-    const initial = await generateAgentProfile({ displayName: 'Jun', text: '我在做 AI 社交名片。' }, mockAiClient);
+    const initial = await generateAgentProfile({ displayName: 'Jun', contact: 'wx_jun7', text: '我在做 AI 社交名片。' }, mockAiClient);
     const response = await POST(
       new Request('http://localhost/api/agents/evolution-chat', {
         method: 'POST',

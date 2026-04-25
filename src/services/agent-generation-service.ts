@@ -13,6 +13,7 @@ type LinkInput = {
 
 export type GenerateAgentProfileInput = {
   displayName: string;
+  contact: string;
   role?: string;
   city?: string;
   text?: string;
@@ -222,6 +223,11 @@ async function persistExtractedKnowledge(
 
 export async function generateAgentProfile(input: GenerateAgentProfileInput, aiClient: AiClient, options: GenerateAgentProfileOptions = {}) {
   const displayName = input.displayName.trim();
+  const contact = input.contact.trim();
+  if (!contact) {
+    throw new Error('Contact is required');
+  }
+
   const { user, agent } = await createAgent({
     displayName,
     role: input.role,
@@ -229,6 +235,17 @@ export async function generateAgentProfile(input: GenerateAgentProfileInput, aiC
   });
 
   const sources = [];
+
+  sources.push(
+    await addSourceDocument({
+      userId: user.id,
+      agentId: agent.id,
+      sourceKind: 'manual',
+      sourceType: 'contact',
+      title: '联系方式',
+      rawText: `联系方式：${contact}`
+    })
+  );
 
   if (input.text?.trim()) {
     sources.push(

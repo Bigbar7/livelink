@@ -87,4 +87,13 @@ describe('POST /api/agents', () => {
 
     expect(response.status).toBe(400);
   });
+
+  it('returns 400 for profile generation when contact is missing', async () => {
+    const response = await generateProfilePOST(new Request('http://localhost/api/agents/generate-profile', {
+      method: 'POST',
+      body: JSON.stringify({ displayName: 'Jun', text: '我在做 AI 社交名片。' })
+    }));
+
+    expect(response.status).toBe(400);
+  });
 });

@@ -1,6 +1,6 @@
 import { badRequest, ok, serverError } from '@/lib/http';
 import { createSessionCookie } from '@/lib/session';
-import { displayNameSchema } from '@/lib/validation';
+import { contactHandleSchema, displayNameSchema } from '@/lib/validation';
 import { defaultAiClient } from '@/services/ai/default-ai-client';
 import { generateAgentProfile } from '@/services/agent-generation-service';
 import { z } from 'zod';
@@ -9,6 +9,7 @@ export const runtime = 'nodejs';
 
 const generateAgentProfileSchema = z.object({
   displayName: displayNameSchema,
+  contact: contactHandleSchema,
   role: z.string().max(80).optional(),
   city: z.string().max(80).optional(),
   text: z.string().max(20000).optional(),

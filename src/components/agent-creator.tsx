@@ -239,6 +239,8 @@ export function AgentCreator() {
   const [showNameModal, setShowNameModal] = useState(false);
   const [nickname, setNickname] = useState('');
   const [nicknameError, setNicknameError] = useState('');
+  const [contact, setContact] = useState('');
+  const [contactError, setContactError] = useState('');
   const [isLaunching, setIsLaunching] = useState(false);
   const [mode, setMode] = useState<InputMode>('text');
   const [pasteText, setPasteText] = useState('');
@@ -286,7 +288,7 @@ export function AgentCreator() {
   const profileNeeds = analysis.needs.length > 0 ? analysis.needs : wants;
   const persona = analysis.persona;
   const hasPersonaSignals = Boolean(persona.title || persona.description || tags[0] || icebreakers[0]);
-  const contactHandle = nickname.trim() ? `@${nickname.trim()}` : `ID ${profile?.slug ?? 'agent'}`;
+  const contactHandle = contact.trim() || (nickname.trim() ? `@${nickname.trim()}` : `ID ${profile?.slug ?? 'agent'}`);
   const sparseProfileHint = '资料还不够，继续补充后再生成';
   const hasGenerated = Boolean(generated);
   const agentInputCopy = hasGenerated
@@ -349,17 +351,25 @@ export function AgentCreator() {
 
   const startCreate = () => {
     setNicknameError('');
+    setContactError('');
     setShowNameModal(true);
   };
 
   const confirmName = () => {
     const trimmedNickname = nickname.trim();
+    const trimmedContact = contact.trim();
     if (!trimmedNickname) {
       setNicknameError('先填写昵称，再生成你的 Agent。');
       return;
     }
+    if (!trimmedContact) {
+      setContactError('请填写微信号或手机号，用于后续连接。');
+      return;
+    }
     setNickname(trimmedNickname);
+    setContact(trimmedContact);
     setNicknameError('');
+    setContactError('');
     setShowNameModal(false);
     setIsLaunching(true);
     setTimeout(() => setStep('input'), 260);
@@ -468,13 +478,20 @@ export function AgentCreator() {
 
   const generateAgent = async () => {
     const trimmedNickname = nickname.trim();
+    const trimmedContact = contact.trim();
     if (!trimmedNickname) {
       setNicknameError('先填写昵称，再生成你的 Agent。');
       setShowNameModal(true);
       return;
     }
+    if (!trimmedContact) {
+      setContactError('请填写微信号或手机号，用于后续连接。');
+      setShowNameModal(true);
+      return;
+    }
 
     setNickname(trimmedNickname);
+    setContact(trimmedContact);
     setError('');
     setStep('generating');
 
@@ -485,6 +502,7 @@ export function AgentCreator() {
         method: 'POST',
         body: JSON.stringify({
           displayName: trimmedNickname,
+          contact: trimmedContact,
           text: mode === 'text' || mode === 'chat' ? activeText : undefined,
           fileName: mode === 'file' ? fileName : undefined,
           fileText: mode === 'file' ? fileText : undefined,
@@ -647,7 +665,20 @@ export function AgentCreator() {
                       />
                     </label>
                     {nicknameError && <p className="field-error">{nicknameError}</p>}
-                    <button className="primary-action lime" onClick={confirmName} disabled={!nickname.trim()}>
+                    <label className="text-field">
+                      <span>微信号或手机号</span>
+                      <input
+                        value={contact}
+                        aria-invalid={Boolean(contactError)}
+                        onChange={(event) => {
+                          setContact(event.target.value);
+                          if (contactError) setContactError('');
+                        }}
+                        placeholder="微信号 / 手机号"
+                      />
+                    </label>
+                    {contactError && <p className="field-error">{contactError}</p>}
+                    <button className="primary-action lime" onClick={confirmName} disabled={!nickname.trim() || !contact.trim()}>
                       确认生成
                     </button>
                   </div>
@@ -860,7 +891,7 @@ export function AgentCreator() {
                   </div>
                   <div className="profile-actions">
                     <span className="profile-handle">{contactHandle}</span>
-                    <button type="button" onClick={copyProfileContact}>复制 ID</button>
+                    <button type="button" onClick={copyProfileContact}>复制微信/手机</button>
                     <button type="button" onClick={() => setStep('share')}>联系分身</button>
                   </div>
                 </div>

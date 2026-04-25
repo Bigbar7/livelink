@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const displayNameSchema = z.string().trim().min(1).max(40);
+export const contactHandleSchema = z.string().trim().min(1).max(80);
 
 export const createAgentSchema = z.object({
   displayName: displayNameSchema,

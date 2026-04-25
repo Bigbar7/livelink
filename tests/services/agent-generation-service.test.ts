@@ -35,6 +35,7 @@ describe('agent-generation-service', () => {
     const result = await generateAgentProfile(
       {
         displayName: 'Jun',
+        contact: 'wx_jun7',
         text: '我是 AI 产品经理，想找硬件工程师。'
       },
       aiClient
@@ -83,6 +84,7 @@ describe('agent-generation-service', () => {
     const result = await generateAgentProfile(
       {
         displayName: 'Jun',
+        contact: 'wx_jun7',
         text: '我在做 Livelink，希望把个人资料转成可推荐的 Agent Profile，想找推荐系统工程师。'
       },
       { ...mockAiClient, generateProfileDraft }
@@ -117,6 +119,7 @@ describe('agent-generation-service', () => {
     const result = await generateAgentProfile(
       {
         displayName: 'Lavine',
+        contact: '13800138000',
         text: 'Lavine，香港城市大学计算机科学硕士在读，定位后端软件工程师。'
       },
       { ...mockAiClient, generateProfileDraft }
@@ -154,16 +157,52 @@ describe('agent-generation-service', () => {
     const result = await generateAgentProfile(
       {
         displayName: 'Jun',
+        contact: 'wx_jun7',
         links: [{ url: 'https://github.com/jun7' }]
       },
       { ...mockAiClient, generateProfileDraft },
       { importGithubProfile }
     );
 
-    const source = await prisma.sourceDocument.findFirstOrThrow({ where: { agentId: result.agent.id } });
+    const source = await prisma.sourceDocument.findFirstOrThrow({ where: { agentId: result.agent.id, sourceType: 'github' } });
     expect(source.fetchStatus).toBe('fetched');
     expect(source.rawText).toContain('AI social profile builder');
     expect(generateProfileDraft.mock.calls[0]?.[0].text).toContain('README 摘要：AI social profile builder');
     expect(importGithubProfile).toHaveBeenCalledWith({ url: 'https://github.com/jun7' });
+  });
+
+  it('adds the required contact handle to the generated profile material', async () => {
+    const generateProfileDraft = vi.fn<NonNullable<AiClient['generateProfileDraft']>>(async (input) => ({
+      facts: [
+        {
+          factType: 'identity',
+          title: '联系方式',
+          summary: input.text,
+          evidenceText: input.text,
+          confidence: 0.8
+        }
+      ],
+      projects: [],
+      card: await mockAiClient.generateCard({ wikiMarkdown: 'contact' })
+    }));
+
+    const result = await generateAgentProfile(
+      {
+        displayName: 'Jun',
+        contact: 'wx_jun7',
+        text: '我在做 AI 社交名片。'
+      },
+      { ...mockAiClient, generateProfileDraft }
+    );
+
+    const source = await prisma.sourceDocument.findFirstOrThrow({
+      where: {
+        agentId: result.agent.id,
+        sourceType: 'contact'
+      }
+    });
+
+    expect(source.rawText).toContain('联系方式：wx_jun7');
+    expect(generateProfileDraft.mock.calls[0]?.[0].text).toContain('联系方式：wx_jun7');
   });
 });

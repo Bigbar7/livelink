@@ -47,6 +47,20 @@ DATABASE_URL=postgresql://...
 
 如果临时改回本地 SQLite，必须同步调整 Prisma datasource provider 和迁移策略；不要把 SQLite schema 部署到使用 PostgreSQL URL 的环境。
 
+部署或切换数据库后，必须对当前 `DATABASE_URL` 执行 Prisma 迁移：
+
+```bash
+npm run db:deploy
+```
+
+如果生成分身时报：
+
+```text
+The column `analysisJson` does not exist in the current database.
+```
+
+说明应用连接到的数据库还没有应用 `20260425130000_add_profile_analysis` 迁移。确认 Vercel 的 `DATABASE_URL` 指向正确数据库后，重新执行 `npm run db:deploy`，再重新部署或重启服务。
+
 ## 4. TLS 注意事项
 
 本地开发如果遇到证书链问题，`.env` 可以临时配置：

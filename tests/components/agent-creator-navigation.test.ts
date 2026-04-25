@@ -27,8 +27,16 @@ describe('AgentCreator navigation copy', () => {
     expect(componentSource).toContain("const trimmedNickname = nickname.trim();");
     expect(componentSource).toContain("setNicknameError('先填写昵称，再生成你的 Agent。');");
     expect(componentSource).toContain("setNickname(trimmedNickname);");
-    expect(componentSource).toContain('disabled={!nickname.trim()}');
+    expect(componentSource).toContain('disabled={!nickname.trim() || !contact.trim()}');
     expect(componentSource).toContain('{nicknameError && <p className="field-error">{nicknameError}</p>}');
+  });
+
+  it('requires a contact handle before entering and submitting the creation flow', () => {
+    expect(componentSource).toContain("const trimmedContact = contact.trim();");
+    expect(componentSource).toContain("setContactError('请填写微信号或手机号，用于后续连接。');");
+    expect(componentSource).toContain("setContact(trimmedContact);");
+    expect(componentSource).toContain('disabled={!nickname.trim() || !contact.trim()}');
+    expect(componentSource).toContain('contact: trimmedContact');
   });
 
   it('keeps the home CTA focused and reveals resident agents as discovery', () => {

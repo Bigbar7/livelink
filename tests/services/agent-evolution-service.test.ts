@@ -24,6 +24,7 @@ describe('agent evolution service', () => {
     const initial = await generateAgentProfile(
       {
         displayName: 'Jun',
+        contact: 'wx_jun7',
         text: '我在做 AI 社交名片，想找 AI 工程化伙伴。'
       },
       mockAiClient
