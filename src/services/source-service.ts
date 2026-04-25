@@ -8,8 +8,12 @@ export async function addSourceDocument(input: {
   sourceType: string;
   url?: string;
   title?: string;
+  description?: string;
   rawText?: string;
+  cleanedText?: string;
   userNote?: string;
+  fetchStatus?: string;
+  errorReason?: string;
 }) {
   const agent = await prisma.agent.findUnique({
     where: { id: input.agentId },
@@ -20,7 +24,7 @@ export async function addSourceDocument(input: {
     throw new Error('Agent not found for user');
   }
 
-  const fetchStatus = input.sourceKind === 'link' ? 'pending' : 'manual';
+  const fetchStatus = input.fetchStatus ?? (input.sourceKind === 'link' ? 'pending' : 'manual');
 
   return prisma.sourceDocument.create({
     data: {
@@ -30,9 +34,11 @@ export async function addSourceDocument(input: {
       sourceType: input.sourceType,
       url: input.url,
       title: input.title,
+      description: input.description,
       rawText: input.rawText,
-      cleanedText: input.rawText,
+      cleanedText: input.cleanedText ?? input.rawText,
       userNote: input.userNote,
+      errorReason: input.errorReason,
       fetchStatus,
       extractionStatus: 'pending'
     }

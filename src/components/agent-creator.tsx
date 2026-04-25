@@ -1,6 +1,6 @@
 'use client';
 
-import { ChangeEvent, ReactNode, useMemo, useState, useEffect } from 'react';
+import { ChangeEvent, ReactNode, useMemo, useRef, useState, useEffect } from 'react';
 
 type FlowStep = 'home' | 'input' | 'generating' | 'card' | 'share' | 'find' | 'matches' | 'candidate' | 'icebreaker';
 type InputMode = 'text' | 'file' | 'link' | 'chat';
@@ -15,6 +15,11 @@ type AgentProfile = {
   id: string;
   userId: string;
   agentId: string;
+  user?: {
+    displayName: string;
+    role?: string | null;
+    city?: string | null;
+  };
   slug: string;
   headline: string;
   bio: string;
@@ -44,10 +49,13 @@ type ParsedDocumentResponse = {
   text: string;
 };
 
+type EvolutionChatResponse = ConversationMessage;
+
 type RecommendationItem = {
   profile: AgentProfile;
   score: number;
   reason: string;
+  topic?: string;
 };
 
 type CandidateView = {
@@ -69,6 +77,12 @@ type ConversationMessage = {
 };
 
 const promptSuggestions = ['我是谁', '现在做什么', '做过什么项目', '我能提供', '我想找谁'];
+
+const findPromptTemplate = `我想认识：
+对方是谁：
+我想聊什么：
+我能提供什么：
+希望下一步：`;
 
 const creationChatQuestions = [
   '你现在主要在做什么？',
@@ -121,22 +135,27 @@ function firstLetter(value: string) {
   return (value.trim()[0] || 'A').toUpperCase();
 }
 
+function profileDisplayName(profile: AgentProfile) {
+  return profile.user?.displayName || profile.headline.split('·')[0]?.trim() || profile.headline;
+}
+
 function profileToCandidate(item: RecommendationItem): CandidateView {
   const tags = parseJsonList(item.profile.tagsJson);
   const offers = parseJsonList(item.profile.offersJson);
   const icebreakers = parseJsonList(item.profile.icebreakersJson);
+  const name = profileDisplayName(item.profile);
 
   return {
     id: item.profile.id,
     userId: item.profile.userId,
-    name: item.profile.headline.split('·')[0]?.trim() || item.profile.headline,
+    name,
     role: item.profile.headline,
-    avatar: firstLetter(item.profile.headline),
+    avatar: firstLetter(name),
     tags,
     score: Math.max(item.score, 60),
     reason: item.reason,
     offer: offers.join('、') || item.profile.bio,
-    topic: icebreakers[0] || '围绕彼此的能力、需求和合作场景展开交流'
+    topic: item.topic || icebreakers[0] || '围绕彼此的能力、需求和合作场景展开交流'
   };
 }
 
@@ -180,13 +199,15 @@ export function AgentCreator() {
   ]);
   const [evolutionDraft, setEvolutionDraft] = useState('');
   const [evolutionConversation, setEvolutionConversation] = useState<ConversationMessage[]>([]);
+  const [isEvolutionChatting, setIsEvolutionChatting] = useState(false);
   const [generated, setGenerated] = useState<GeneratedAgentResponse | null>(null);
   const [residentProfiles, setResidentProfiles] = useState<AgentProfile[]>([]);
   const [recommendations, setRecommendations] = useState<CandidateView[]>([]);
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateView | null>(null);
-  const [findQuery, setFindQuery] = useState('我在做 AI 社交名片，想找一位懂嵌入式硬件和供应链的工程师做队友。');
+  const [findQuery, setFindQuery] = useState('');
   const [error, setError] = useState('');
   const [isBooting, setIsBooting] = useState(true);
+  const evolutionThreadEndRef = useRef<HTMLDivElement | null>(null);
 
   const profile = generated?.profile;
   const tags = parseJsonList(profile?.tagsJson);
@@ -195,6 +216,11 @@ export function AgentCreator() {
   const offers = parseJsonList(profile?.offersJson);
   const wants = parseJsonList(profile?.wantsJson);
   const icebreakers = parseJsonList(profile?.icebreakersJson);
+  const profileHighlights = [...skills, ...offers].filter(Boolean).slice(0, 4);
+  const profileDomains = [...tags, ...interests].filter(Boolean).slice(0, 4);
+  const hasPersonaSignals = Boolean(tags[0] || icebreakers[0]);
+  const contactHandle = nickname ? `@${nickname}` : `ID ${profile?.slug ?? 'agent'}`;
+  const sparseProfileHint = '资料还不够，继续补充后再生成';
   const hasGenerated = Boolean(generated);
   const agentInputCopy = hasGenerated
     ? {
@@ -240,6 +266,10 @@ export function AgentCreator() {
       setIsBooting(false);
     });
   }, []);
+
+  useEffect(() => {
+    evolutionThreadEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [evolutionConversation, isEvolutionChatting]);
 
   const startCreate = () => setShowNameModal(true);
 
@@ -293,15 +323,34 @@ export function AgentCreator() {
     setChatDraft('');
   };
 
-  const sendEvolutionMessage = (content: string = evolutionDraft) => {
+  const chatEvolution = async (content: string = evolutionDraft) => {
+    if (!generated || isEvolutionChatting) return;
     const trimmed = content.trim();
     if (!trimmed) return;
-    setEvolutionConversation((messages) => [
-      ...messages,
-      { role: 'user', content: trimmed },
-      { role: 'assistant', content: '我会把这次变化整理进你的定位、能力、项目或需求里。确认后点击保存并优化。' }
-    ]);
+
+    const history = evolutionConversation;
+    const userMessage: ConversationMessage = { role: 'user', content: trimmed };
+    setEvolutionConversation([...history, userMessage]);
     setEvolutionDraft('');
+    setError('');
+    setIsEvolutionChatting(true);
+
+    try {
+      const assistantMessage = await readApi<EvolutionChatResponse>('/api/agents/evolution-chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: generated.user.id,
+          agentId: generated.agent.id,
+          message: trimmed,
+          conversation: history
+        })
+      });
+      setEvolutionConversation([...history, userMessage, assistantMessage]);
+    } catch (chatError) {
+      setError(chatError instanceof Error ? chatError.message : 'AI 对话失败');
+    } finally {
+      setIsEvolutionChatting(false);
+    }
   };
 
   const generateAgent = async () => {
@@ -394,6 +443,11 @@ export function AgentCreator() {
     }
   };
 
+  const copyProfileContact = () => {
+    const profileLine = profile?.headline ? `${contactHandle} · ${profile.headline}` : contactHandle;
+    void navigator.clipboard?.writeText(profileLine);
+  };
+
   return (
     <main className={`app-shell step-${step}`}>
       <div className="phone">
@@ -441,7 +495,6 @@ export function AgentCreator() {
                   </button>
                 </div>
                 <div className="scroll-cue" aria-hidden="true">
-                  <span>下面有人</span>
                   <b>↓</b>
                 </div>
               </div>
@@ -486,18 +539,21 @@ export function AgentCreator() {
                           {message.content}
                         </div>
                       ))}
+                      <div ref={evolutionThreadEndRef} data-evolution-thread-end />
                     </div>
                     <div className="evolution-composer-dock">
                       <div className="quick-prompts">
                         {evolutionQuickPrompts.map((prompt) => (
-                          <button key={prompt} onClick={() => sendEvolutionMessage(prompt)}>
+                          <button key={prompt} onClick={() => chatEvolution(prompt)} disabled={isEvolutionChatting}>
                             {prompt}
                           </button>
                         ))}
                       </div>
                       <div className="chat-composer">
                         <input value={evolutionDraft} onChange={(event) => setEvolutionDraft(event.target.value)} placeholder="告诉我最近发生了什么，或想让分身怎么变化..." />
-                        <button onClick={() => sendEvolutionMessage()}>发送</button>
+                        <button onClick={() => chatEvolution()} disabled={isEvolutionChatting}>
+                          {isEvolutionChatting ? '思考中' : '发送'}
+                        </button>
                       </div>
                       <button className="primary-action lime" onClick={saveEvolution}>
                         {agentInputCopy.submit}
@@ -644,8 +700,8 @@ export function AgentCreator() {
                 <div className="agent-card profile-card">
                   <div className="profile-identity">
                     <div className="avatar">{firstLetter(nickname)}</div>
-                    <div>
-                      <span className="profile-kicker">AI 分身 · 数字人格</span>
+                    <div className="profile-main">
+                      <span className="profile-kicker">这是你的数字分身</span>
                       <h3>{nickname || profile.headline.split('·')[0]?.trim() || '我的分身'}</h3>
                       <p>{profile.headline}</p>
                     </div>
@@ -655,6 +711,11 @@ export function AgentCreator() {
                     {tags.slice(0, 6).map((tag) => (
                       <span key={tag}>{tag}</span>
                     ))}
+                  </div>
+                  <div className="profile-actions">
+                    <span className="profile-handle">{contactHandle}</span>
+                    <button type="button" onClick={copyProfileContact}>复制 ID</button>
+                    <button type="button" onClick={() => setStep('share')}>联系分身</button>
                   </div>
                 </div>
 
@@ -666,23 +727,23 @@ export function AgentCreator() {
                     </div>
                     <div className="activity-card">
                       <b>正在关注</b>
-                      <span>{[...interests, ...tags].slice(0, 3).join('、') || '继续上传动态后生成关注方向'}</span>
+                      <span>{profileDomains.slice(0, 3).join('、') || sparseProfileHint}</span>
                     </div>
                   </div>
                 </ProfileSection>
 
                 <ProfileSection eyebrow="HIGHLIGHTS" title="履历亮点">
                   <div className="highlight-list">
-                    {[...skills, ...offers].slice(0, 4).map((item, index) => (
+                    {profileHighlights.map((item, index) => (
                       <div className="highlight-item" key={`${item}-${index}`}>
                         <em>{String(index + 1).padStart(2, '0')}</em>
                         <span>{item}</span>
                       </div>
                     ))}
-                    {[...skills, ...offers].length === 0 && (
+                    {profileHighlights.length === 0 && (
                       <div className="highlight-item">
-                        <em>01</em>
-                        <span>继续补充资料后生成代表性经历和能力高光</span>
+                        <em>—</em>
+                        <span>{sparseProfileHint}</span>
                       </div>
                     )}
                   </div>
@@ -690,37 +751,41 @@ export function AgentCreator() {
 
                 <ProfileSection eyebrow="DOMAINS" title="领域画像">
                   <div className="domain-grid">
-                    {[...tags, ...interests].slice(0, 4).map((domain, index) => (
-                      <div className="domain-pill" key={`${domain}-${index}`}>
+                    {profileDomains.map((domain) => (
+                      <div className="domain-pill" key={domain}>
                         <b>{domain}</b>
-                        <span>{34 - index * 6}%</span>
+                        <span>已提取</span>
                       </div>
                     ))}
-                    {[...tags, ...interests].length === 0 && <div className="domain-pill"><b>价值社交</b><span>34%</span></div>}
+                    {profileDomains.length === 0 && <div className="profile-empty">{sparseProfileHint}</div>}
                   </div>
                 </ProfileSection>
 
                 <ProfileSection eyebrow="PERSONA" title="人格兽">
-                  <div className="persona-beast">
-                    <div className="beast-mark">{firstLetter(nickname)}</div>
-                    <div>
-                      <b>{tags[0] || '夜行策展猫'}</b>
-                      <span>{icebreakers[0] || '慢热但敏锐，适合从高质量问题进入深聊。'}</span>
+                  {hasPersonaSignals ? (
+                    <div className="persona-beast">
+                      <div className="beast-mark">{firstLetter(nickname)}</div>
+                      <div>
+                        <b>{tags[0] ?? '待确认的人格线索'}</b>
+                        <span>{icebreakers[0] ?? '还没有足够资料生成稳定的人格描述。'}</span>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="profile-empty">{sparseProfileHint}</div>
+                  )}
                 </ProfileSection>
 
                 <ProfileSection eyebrow="NEEDS" title="最近需求">
                   <div className="need-card">
                     <b>我最近想找</b>
-                    <span>{wants.join('、') || '继续补充需求后生成'}</span>
+                    <span>{wants.join('、') || sparseProfileHint}</span>
                   </div>
-                  <div className="icebreaker-strip">{icebreakers.join('、') || '生成后可用于连接开场'}</div>
+                  {icebreakers.length > 0 && <div className="icebreaker-strip">{icebreakers.join('、')}</div>}
                 </ProfileSection>
 
                 <div className="summary-card compact">
-                  <SummaryRow title="我能提供">{offers.join('、') || '继续补充资料后生成'}</SummaryRow>
-                  <SummaryRow title="我正在寻找">{wants.join('、') || '继续补充需求后生成'}</SummaryRow>
+                  <SummaryRow title="我能提供">{offers.join('、') || sparseProfileHint}</SummaryRow>
+                  <SummaryRow title="我正在寻找">{wants.join('、') || sparseProfileHint}</SummaryRow>
                 </div>
                 <div className="sticky-actions">
                   <button className="primary-action lime" onClick={() => setStep('find')}>
@@ -762,18 +827,15 @@ export function AgentCreator() {
                   <br />
                   <mark>认识谁</mark>
                 </h2>
-                <p className="muted">Agent 会结合你的名片和需求，从已发布的真实 AgentProfile 中推荐。</p>
                 {error && <p className="error-text">{error}</p>}
                 <label className="query-box">
                   <span>我的需求</span>
-                  <textarea value={findQuery} onChange={(event) => setFindQuery(event.target.value)} />
+                  <textarea
+                    value={findQuery}
+                    onChange={(event) => setFindQuery(event.target.value)}
+                    placeholder={findPromptTemplate}
+                  />
                 </label>
-                <div className="prompt-list">
-                  <span>找队友</span>
-                  <span>找投资人</span>
-                  <span>找工程师</span>
-                  <span>找设计师</span>
-                </div>
                 <div className="sticky-actions">
                   <button className="primary-action lime" onClick={findPeople}>
                     生成推荐列表
@@ -906,14 +968,24 @@ function ResidentProfiles({ profiles }: { profiles: AgentProfile[] }) {
         {profiles.length === 0 ? (
           <div className="resident-empty">暂无已发布名片，生成后会出现在这里。</div>
         ) : (
-          profiles.map((profile) => (
-            <div className="resident-card" key={profile.id}>
-              <span>{firstLetter(profile.headline)}</span>
-              <div>
-                <b>{profile.headline.split('·')[0]?.trim() || profile.headline}</b>
+          profiles.map((profile) => {
+            const name = profileDisplayName(profile);
+            const tags = parseJsonList(profile.tagsJson).slice(0, 3);
+
+            return (
+              <div className="resident-card" key={profile.id} aria-label="查看已入住 Agent">
+                <span className="resident-avatar">{firstLetter(name)}</span>
+                <div className="resident-main">
+                  <b className="resident-name">{name}</b>
+                  <div className="resident-tags">
+                    {(tags.length ? tags : ['Agent']).map((tag) => (
+                      <span key={tag}>{tag}</span>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

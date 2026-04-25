@@ -41,7 +41,7 @@ localStorage 保存当前 Demo 用户上下文
 - 个人名片链接可以直接分享和扫码访问。
 - 微信内访问、分享和二维码传播成本最低。
 - 便于快速部署和迭代。
-- 可以复用为后续小程序的公开落地页。
+- 保持纯 Web 形态，减少套壳和多端维护成本。
 - Demo 阶段需要备用链接和网页兜底。
 
 ## 3. 目标架构
@@ -162,7 +162,7 @@ src/
     connection.ts
 ```
 
-原则：页面只负责 UI 和路由，业务逻辑放到 `services`，方便后续迁移小程序或独立后端。
+原则：页面只负责 UI 和路由，业务逻辑放到 `services`，方便后续接入独立后端或更多 Web 场景。
 
 ## 5. 前端设计
 
@@ -707,7 +707,7 @@ MVP 阶段基于个人 Wiki 和名片字段做规则匹配，不做复杂算法�
 ## 16. 环境变量
 
 ```text
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require"
 AI_API_KEY=""
 AI_BASE_URL=""
 AI_MODEL=""

@@ -26,8 +26,21 @@ describe('AgentCreator evolution input', () => {
     expect(componentSource).toContain('evolution-screen');
     expect(componentSource).toContain('evolution-chat-fullscreen');
     expect(componentSource).toContain('evolution-composer-dock');
+    expect(componentSource).toContain('/api/agents/evolution-chat');
     expect(componentSource).toContain('/api/agents/evolve');
     expect(componentSource).toContain('保存并优化');
     expect(componentSource).not.toContain('提交并生成 Agent');
+  });
+
+  it('does not fake assistant replies during evolution chat', () => {
+    expect(componentSource).not.toContain('我会把这次变化整理进你的定位、能力、项目或需求里。确认后点击保存并优化。');
+    expect(componentSource).toContain('isEvolutionChatting');
+    expect(componentSource).toContain('chatEvolution');
+  });
+
+  it('keeps the evolution chat scrolled to the latest message', () => {
+    expect(componentSource).toContain('evolutionThreadEndRef');
+    expect(componentSource).toContain('scrollIntoView({ behavior:');
+    expect(componentSource).toContain('data-evolution-thread-end');
   });
 });

@@ -3,6 +3,7 @@ import { createAgent } from '@/services/agent-service';
 import { generatePublishedCardFromKnowledge, publishGeneratedCard } from '@/services/card-service';
 import { confirmAgentKnowledge, extractKnowledgeFromSource } from '@/services/knowledge-service';
 import { addSourceDocument } from '@/services/source-service';
+import { importGithubProfileLink, type LinkImportResult } from '@/services/github-import-service';
 import { prisma } from '@/lib/db';
 
 type LinkInput = {
@@ -20,6 +21,10 @@ export type GenerateAgentProfileInput = {
   links?: LinkInput[];
 };
 
+type GenerateAgentProfileOptions = {
+  importGithubProfile?: (link: LinkInput) => Promise<LinkImportResult>;
+};
+
 type ConversationMessage = {
   role: 'assistant' | 'user';
   content: string;
@@ -31,6 +36,20 @@ export type EvolveAgentProfileInput = {
   text?: string;
   conversation?: ConversationMessage[];
 };
+
+export type EvolutionChatInput = EvolveAgentProfileInput & {
+  message: string;
+};
+
+function parseJsonList(value?: string) {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+}
 
 function inferSourceType(url: string) {
   if (url.includes('github.com')) return 'github';
@@ -44,8 +63,80 @@ function sourceText(source: Awaited<ReturnType<typeof addSourceDocument>>) {
   return [`标题：${source.title ?? '用户资料'}`, source.rawText, source.userNote].filter(Boolean).join('\n\n');
 }
 
+function mergeUserNote(importedNote: string | undefined, linkNote: string | undefined) {
+  return [importedNote, linkNote ? `用户补充：${linkNote}` : ''].filter(Boolean).join('\n');
+}
+
+async function importLinkSource(link: LinkInput, options: GenerateAgentProfileOptions) {
+  const sourceType = inferSourceType(link.url);
+
+  if (sourceType !== 'github') {
+    return {
+      sourceKind: 'link' as const,
+      sourceType,
+      url: link.url,
+      title: link.url,
+      userNote: link.note ?? `公开链接：${link.url}`
+    };
+  }
+
+  const importGithubProfile = options.importGithubProfile ?? ((githubLink: LinkInput) => importGithubProfileLink(githubLink.url));
+  const imported = await importGithubProfile(link);
+
+  return {
+    sourceKind: 'link' as const,
+    sourceType: imported.sourceType,
+    url: imported.url,
+    title: imported.title,
+    description: imported.description,
+    rawText: imported.rawText,
+    cleanedText: imported.cleanedText,
+    fetchStatus: imported.fetchStatus,
+    userNote: mergeUserNote(imported.userNote, link.note),
+    errorReason: imported.errorReason
+  };
+}
+
 function conversationText(messages: ConversationMessage[] = []) {
   return messages.map((message) => `${message.role === 'user' ? '用户' : 'AI'}：${message.content}`).join('\n');
+}
+
+export async function chatAgentEvolution(input: EvolutionChatInput, aiClient: AiClient) {
+  if (!aiClient.chatEvolution) {
+    throw new Error('Evolution chat is unavailable');
+  }
+
+  const agent = await prisma.agent.findFirstOrThrow({
+    where: {
+      id: input.agentId,
+      userId: input.userId
+    },
+    include: {
+      user: true,
+      cards: {
+        orderBy: { updatedAt: 'desc' },
+        take: 1
+      }
+    }
+  });
+  const latestProfile = agent.cards[0];
+
+  return aiClient.chatEvolution({
+    message: input.message,
+    conversation: input.conversation ?? [],
+    user: { displayName: agent.user.displayName },
+    currentProfile: latestProfile
+      ? {
+          headline: latestProfile.headline,
+          bio: latestProfile.bio,
+          tags: parseJsonList(latestProfile.tagsJson),
+          skills: parseJsonList(latestProfile.skillsJson),
+          interests: parseJsonList(latestProfile.interestsJson),
+          offers: parseJsonList(latestProfile.offersJson),
+          wants: parseJsonList(latestProfile.wantsJson)
+        }
+      : null
+  });
 }
 
 async function persistExtractedKnowledge(
@@ -99,7 +190,7 @@ async function persistExtractedKnowledge(
   });
 }
 
-export async function generateAgentProfile(input: GenerateAgentProfileInput, aiClient: AiClient) {
+export async function generateAgentProfile(input: GenerateAgentProfileInput, aiClient: AiClient, options: GenerateAgentProfileOptions = {}) {
   const { user, agent } = await createAgent({
     displayName: input.displayName,
     role: input.role,
@@ -134,17 +225,13 @@ export async function generateAgentProfile(input: GenerateAgentProfileInput, aiC
     );
   }
 
-  for (const link of input.links ?? []) {
-    if (!link.url.trim()) continue;
+  const linkSources = await Promise.all((input.links ?? []).filter((link) => link.url.trim()).map((link) => importLinkSource(link, options)));
+  for (const linkSource of linkSources) {
     sources.push(
       await addSourceDocument({
         userId: user.id,
         agentId: agent.id,
-        sourceKind: 'link',
-        sourceType: inferSourceType(link.url),
-        url: link.url,
-        title: link.url,
-        userNote: link.note ?? `公开链接：${link.url}`
+        ...linkSource
       })
     );
   }

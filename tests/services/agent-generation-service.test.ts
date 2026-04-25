@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import type { AiClient } from '@/services/ai/ai-client';
 import { generateAgentProfile } from '@/services/agent-generation-service';
 import { mockAiClient } from '@/services/ai/mock-ai-client';
+import type { LinkImportResult } from '@/services/github-import-service';
 
 describe('agent-generation-service', () => {
   beforeEach(async () => {
@@ -50,5 +51,44 @@ describe('agent-generation-service', () => {
     expect(aiClient.extractKnowledge).not.toHaveBeenCalled();
     expect(aiClient.generateCard).not.toHaveBeenCalled();
     expect(aiClient.generateWiki).not.toHaveBeenCalled();
+  });
+
+  it('adds imported GitHub material to the combined AI draft input', async () => {
+    const generateProfileDraft = vi.fn<NonNullable<AiClient['generateProfileDraft']>>(async (input) => ({
+      facts: [
+        {
+          factType: 'project',
+          title: 'GitHub project',
+          summary: input.text,
+          evidenceText: 'README 摘要',
+          confidence: 0.8
+        }
+      ],
+      projects: [],
+      card: await mockAiClient.generateCard({ wikiMarkdown: 'github' })
+    }));
+    const importGithubProfile = vi.fn(async (): Promise<LinkImportResult> => ({
+      sourceType: 'github',
+      title: 'GitHub: Jun (@jun7)',
+      url: 'https://github.com/jun7',
+      rawText: 'GitHub 用户：Jun\n仓库：livelink\nREADME 摘要：AI social profile builder',
+      cleanedText: 'GitHub 用户：Jun\n仓库：livelink\nREADME 摘要：AI social profile builder',
+      fetchStatus: 'fetched'
+    }));
+
+    const result = await generateAgentProfile(
+      {
+        displayName: 'Jun',
+        links: [{ url: 'https://github.com/jun7' }]
+      },
+      { ...mockAiClient, generateProfileDraft },
+      { importGithubProfile }
+    );
+
+    const source = await prisma.sourceDocument.findFirstOrThrow({ where: { agentId: result.agent.id } });
+    expect(source.fetchStatus).toBe('fetched');
+    expect(source.rawText).toContain('AI social profile builder');
+    expect(generateProfileDraft.mock.calls[0]?.[0].text).toContain('README 摘要：AI social profile builder');
+    expect(importGithubProfile).toHaveBeenCalledWith({ url: 'https://github.com/jun7' });
   });
 });

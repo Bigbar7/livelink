@@ -1,4 +1,5 @@
 import { badRequest, ok } from '@/lib/http';
+import { defaultAiClient } from '@/services/ai/default-ai-client';
 import { recommendProfiles } from '@/services/recommendation-service';
 
 export async function GET(request: Request) {
@@ -7,5 +8,5 @@ export async function GET(request: Request) {
   const interests = url.searchParams.getAll('interest');
 
   if (!userId) return badRequest('Missing userId');
-  return ok(await recommendProfiles(userId, interests));
+  return ok(await recommendProfiles(userId, interests, defaultAiClient));
 }

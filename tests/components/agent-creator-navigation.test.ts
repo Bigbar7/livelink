@@ -22,9 +22,17 @@ describe('AgentCreator navigation copy', () => {
 
   it('keeps the home CTA focused and reveals resident agents as discovery', () => {
     expect(componentSource).toContain('scroll-cue');
-    expect(componentSource).toContain('下面有人');
+    expect(componentSource).not.toContain('下面有人');
     expect(componentSource).toContain('已经入住的人');
     expect(componentSource).toContain('launch-transition');
     expect(componentSource).toContain('setTimeout(() => setStep');
+  });
+
+  it('shows resident profiles as people with avatars, nicknames, and tags', () => {
+    expect(componentSource).toContain('aria-label="查看已入住 Agent"');
+    expect(componentSource).toContain('className="resident-avatar"');
+    expect(componentSource).toContain('className="resident-name"');
+    expect(componentSource).toContain('className="resident-tags"');
+    expect(componentSource).toContain('parseJsonList(profile.tagsJson)');
   });
 });

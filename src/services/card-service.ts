@@ -136,13 +136,23 @@ export async function publishCard(cardId: string) {
 
 export async function getPublicProfile(slug: string) {
   return prisma.agentProfile.findFirst({
-    where: { slug, status: 'published' }
+    where: { slug, status: 'published' },
+    include: {
+      user: {
+        select: { displayName: true, role: true, city: true }
+      }
+    }
   });
 }
 
 export async function listPublishedProfiles(limit = 20) {
   return prisma.agentProfile.findMany({
     where: { status: 'published' },
+    include: {
+      user: {
+        select: { displayName: true, role: true, city: true }
+      }
+    },
     orderBy: { updatedAt: 'desc' },
     take: limit
   });

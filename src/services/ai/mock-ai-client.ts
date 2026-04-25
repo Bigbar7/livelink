@@ -66,5 +66,25 @@ export const mockAiClient: AiClient = {
       wants: ['AI 工程化伙伴', '推荐系统伙伴'],
       icebreakers: ['AI 如何提升社交匹配效率', '个人名片如何变成长期 Agent']
     };
+  },
+
+  async chatEvolution(input) {
+    return {
+      role: 'assistant',
+      content: `我理解了：${input.message}。这次进化我会重点追问可验证的新项目、能力变化和正在寻找的人。`
+    };
+  },
+
+  async rankRecommendationCandidates(input) {
+    return input.candidates
+      .map((candidate) => ({
+        profileId: candidate.profileId,
+        score: Math.min(100, Math.max(candidate.ruleScore, 60)),
+        reason: `对方资料和你关注的 ${input.seeker.interests.join('、')} 存在可聊交集。`,
+        topic: candidate.icebreakers[0] ?? '围绕彼此的能力、需求和合作场景展开交流'
+      }))
+      .filter((candidate) => candidate.score > 0)
+      .sort((first, second) => second.score - first.score)
+      .slice(0, 10);
   }
 };

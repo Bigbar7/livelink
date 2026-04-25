@@ -154,7 +154,7 @@ button {
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  padding-bottom: 92px;
+  padding-bottom: 104px;
 }
 
 .home-orbit {
@@ -273,44 +273,49 @@ mark {
 }
 
 .home-center-action {
-  position: relative;
+  position: absolute;
   z-index: 2;
-  left: auto;
-  top: auto;
+  left: 50%;
+  top: 53%;
   width: min(272px, calc(100% - 44px));
-  margin: auto auto 0;
-  transform: none;
+  margin: 0;
+  transform: translate(-50%, -50%);
+}
+
+.home-center-action .primary-action {
+  min-height: 62px;
+  border-radius: 22px;
+  background: var(--lime);
+  color: var(--ink);
+  box-shadow: 8px 8px 0 var(--line);
+  font-size: 17px;
 }
 
 .scroll-cue {
   position: absolute;
-  bottom: 20px;
+  bottom: 24px;
   left: 50%;
   z-index: 2;
   width: fit-content;
   margin: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: grid;
+  place-items: center;
   transform: translateX(-50%);
   color: var(--muted);
   font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: .08em;
 }
 
 .scroll-cue b {
-  width: 34px;
-  height: 34px;
-  margin-top: 8px;
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
-  border: 2px solid rgb(20 20 16 / 14%);
+  border: 2px solid var(--line);
   border-radius: 50%;
-  background: rgb(255 255 255 / 42%);
+  background: rgb(255 255 255 / 68%);
   color: var(--ink);
-  font-size: 18px;
+  box-shadow: 4px 4px 0 rgb(20 20 16 / 18%);
+  font-size: 19px;
   line-height: 1;
   animation: scroll-cue-bounce 1.35s ease-in-out infinite;
   backdrop-filter: blur(8px);
@@ -322,8 +327,8 @@ mark {
   left: auto;
   right: auto;
   bottom: auto;
-  margin: 34px 18px 0;
-  padding: 0 0 28px;
+  margin: 22px 18px 0;
+  padding: 0 0 30px;
   font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
 }
 
@@ -342,40 +347,67 @@ mark {
 
 .resident-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
 .resident-card {
-  min-height: 52px;
-  padding: 7px 9px;
+  min-height: 76px;
+  padding: 11px;
   display: grid;
-  grid-template-columns: 32px 1fr;
-  gap: 8px;
+  grid-template-columns: 46px 1fr;
+  gap: 11px;
   align-items: center;
-  border: 1px solid rgb(20 20 16 / 12%);
-  border-radius: 999px;
-  background: rgb(255 255 255 / 42%);
+  border: 2px solid rgb(20 20 16 / 15%);
+  border-radius: 22px;
+  background: rgb(255 255 255 / 62%);
   backdrop-filter: blur(8px);
 }
 
-.resident-card > span {
-  width: 32px;
-  height: 32px;
+.resident-avatar {
+  width: 46px;
+  height: 46px;
   display: grid;
   place-items: center;
-  border-radius: 50%;
-  background: var(--lime);
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: var(--blue);
   color: var(--ink);
-  font-size: 12px;
+  box-shadow: 3px 3px 0 rgb(20 20 16 / 20%);
+  font-size: 16px;
   font-weight: 1000;
 }
 
-.resident-card b {
+.resident-main {
+  min-width: 0;
+}
+
+.resident-name {
   display: block;
   overflow: hidden;
   color: var(--ink);
-  font-size: 12px;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resident-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.resident-tags span {
+  max-width: 100%;
+  overflow: hidden;
+  padding: 4px 7px;
+  border: 1px solid rgb(20 20 16 / 14%);
+  border-radius: 999px;
+  background: rgb(217 255 85 / 55%);
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -983,14 +1015,23 @@ mark {
 }
 
 .prompt-list span,
+.prompt-list button,
 .tags span {
   flex: 0 0 auto;
   padding: 8px 10px;
   border: 2px solid var(--line);
   border-radius: 999px;
   background: var(--mint);
+  color: var(--ink);
   font-size: 11px;
   font-weight: 1000;
+  font-family: inherit;
+}
+
+.prompt-list button {
+  appearance: none;
+  cursor: pointer;
+  line-height: normal;
 }
 
 .sticky-actions {
@@ -1291,9 +1332,13 @@ mark {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 78px 1fr;
-  gap: 13px;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 14px;
   align-items: center;
+}
+
+.profile-main {
+  min-width: 0;
 }
 
 .profile-kicker {
@@ -1315,7 +1360,7 @@ mark {
   font-family: ui-serif, "Songti SC", Georgia, serif;
   font-size: 28px;
   line-height: 1;
-  letter-spacing: -.06em;
+  letter-spacing: 0;
 }
 
 .agent-card p {
@@ -1329,6 +1374,49 @@ mark {
 
 .profile-bio {
   margin-top: 14px !important;
+}
+
+.profile-actions {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  margin-top: 14px;
+  padding: 8px;
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  background: #fff8e7;
+  box-shadow: 3px 3px 0 var(--line);
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+}
+
+.profile-handle {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 1000;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-actions button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 1000;
+  white-space: nowrap;
+}
+
+.profile-actions button:last-child {
+  background: var(--lime);
 }
 
 .profile-section {
@@ -1453,8 +1541,21 @@ mark {
 
 .domain-pill span {
   color: var(--violet);
-  font-size: 20px;
+  font-size: 14px;
   font-weight: 1000;
+}
+
+.profile-empty {
+  grid-column: 1 / -1;
+  padding: 13px;
+  border: 2px dashed var(--line);
+  border-radius: 18px;
+  background: #fff8e7;
+  color: var(--muted);
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.5;
 }
 
 .persona-beast {
@@ -1603,7 +1704,7 @@ mark {
   padding: 14px;
   border: 3px solid var(--line);
   border-radius: 22px;
-  background: #fff;
+  background: #f1f1ee;
   box-shadow: 5px 5px 0 var(--line);
   font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
 }
@@ -1627,6 +1728,11 @@ mark {
   font-size: 15px;
   font-weight: 800;
   line-height: 1.55;
+}
+
+.query-box textarea::placeholder {
+  color: #8f918b;
+  opacity: 1;
 }
 
 .candidate-list {
