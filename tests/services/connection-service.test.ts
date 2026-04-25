@@ -47,6 +47,28 @@ describe('connection-service', () => {
     expect(connections.map((connection) => connection.id)).toContain(request.id);
   });
 
+  it('reuses an existing pending request for the same pair', async () => {
+    const from = await createAgent({ displayName: 'Jun' });
+    const to = await createAgent({ displayName: 'Lin' });
+
+    const first = await createConnectionRequest({
+      fromUserId: from.user.id,
+      toUserId: to.user.id,
+      source: 'recommendation',
+      message: '想先聊 AI 社交。'
+    });
+    const second = await createConnectionRequest({
+      fromUserId: from.user.id,
+      toUserId: to.user.id,
+      source: 'recommendation',
+      message: '再次点击复制。'
+    });
+
+    await expect(prisma.connectionRequest.count()).resolves.toBe(1);
+    expect(second.id).toBe(first.id);
+    expect(second.message).toBe('再次点击复制。');
+  });
+
   it('rejects connecting to yourself', async () => {
     const account = await createAgent({ displayName: 'Jun' });
 

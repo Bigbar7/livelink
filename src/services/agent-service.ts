@@ -6,10 +6,15 @@ export async function createAgent(input: {
   role?: string;
   city?: string;
 }) {
+  const displayName = input.displayName.trim();
+  if (!displayName) {
+    throw new Error('Display name is required');
+  }
+
   return prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
       data: {
-        displayName: input.displayName,
+        displayName,
         role: input.role,
         city: input.city
       }
@@ -18,7 +23,7 @@ export async function createAgent(input: {
     const agent = await tx.agent.create({
       data: {
         userId: user.id,
-        name: input.agentName ?? `${input.displayName} 的数字分身`,
+        name: input.agentName ?? `${displayName} 的数字分身`,
         understandingScore: 5
       }
     });

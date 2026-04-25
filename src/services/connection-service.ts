@@ -12,6 +12,24 @@ export async function createConnectionRequest(input: {
     throw new Error('Cannot connect to yourself');
   }
 
+  const existing = await prisma.connectionRequest.findFirst({
+    where: {
+      fromUserId: input.fromUserId,
+      toUserId: input.toUserId,
+      status: 'pending'
+    }
+  });
+
+  if (existing) {
+    return prisma.connectionRequest.update({
+      where: { id: existing.id },
+      data: {
+        source: input.source,
+        message: input.message
+      }
+    });
+  }
+
   return prisma.connectionRequest.create({
     data: {
       fromUserId: input.fromUserId,

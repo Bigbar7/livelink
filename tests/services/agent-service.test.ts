@@ -24,6 +24,12 @@ describe('agent-service', () => {
     expect(result.agent.understandingScore).toBe(5);
   });
 
+  it('rejects a blank display name after trimming whitespace', async () => {
+    await expect(createAgent({ displayName: '   ' })).rejects.toThrow('Display name is required');
+    await expect(prisma.user.count()).resolves.toBe(0);
+    await expect(prisma.agent.count()).resolves.toBe(0);
+  });
+
   it('creates user and agent inside a single transaction', async () => {
     await createAgent({ displayName: 'Jun' });
 

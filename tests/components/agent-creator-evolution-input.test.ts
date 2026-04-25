@@ -33,6 +33,26 @@ describe('AgentCreator evolution input', () => {
     expect(componentSource).not.toContain('提交并生成 Agent');
   });
 
+  it('allows uploading an attachment while evolving an existing profile', () => {
+    expect(componentSource).toContain('evolutionFileName');
+    expect(componentSource).toContain('evolutionFileText');
+    expect(componentSource).toContain('handleEvolutionFile');
+    expect(componentSource).toContain('evolution-file-upload');
+    expect(componentSource).toContain('上传附件');
+    expect(componentSource).toContain('evolution-attachment');
+    expect(componentSource).toContain('evolutionText');
+    expect(componentSource).toContain('text: evolutionText');
+  });
+
+  it('places the evolution attachment action beside the input without quick prompt boxes', () => {
+    expect(componentSource).toContain('evolution-composer-row');
+    expect(componentSource).toContain('evolution-inline-attachment');
+    expect(componentSource).toContain('chat-composer evolution-chat-composer');
+    expect(componentSource).toContain('aria-label="上传附件"');
+    expect(componentSource).toContain('<span aria-hidden="true">+</span>');
+    expect(componentSource).not.toContain('evolutionQuickPrompts.map');
+  });
+
   it('does not fake assistant replies during evolution chat', () => {
     expect(componentSource).not.toContain('我会把这次变化整理进你的定位、能力、项目或需求里。确认后点击保存并优化。');
     expect(componentSource).toContain('isEvolutionChatting');
@@ -49,5 +69,17 @@ describe('AgentCreator evolution input', () => {
     expect(styleSource).toContain('--evolution-composer-clearance');
     expect(styleSource).toContain('[data-evolution-thread-end]');
     expect(styleSource).toContain('flex: 0 0 var(--evolution-composer-clearance)');
+  });
+
+  it('styles the evolution attachment uploader as a compact composer control', () => {
+    expect(styleSource).toContain('.evolution-attachment');
+    expect(styleSource).toContain('.evolution-attachment input');
+    expect(styleSource).toContain('.evolution-attachment-preview');
+    expect(styleSource).toContain('.evolution-composer-row');
+    expect(styleSource).toContain('.evolution-inline-attachment');
+    expect(styleSource).toContain('.evolution-chat-composer');
+    expect(styleSource).toContain('grid-template-columns: auto minmax(0, 1fr) auto');
+    expect(styleSource).toContain('width: 34px');
+    expect(styleSource).toContain('border-radius: 999px');
   });
 });

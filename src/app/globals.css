@@ -246,6 +246,14 @@ mark {
   line-height: 1.45;
 }
 
+.field-error {
+  margin: -6px 0 12px;
+  color: #9d321f;
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .primary-action,
 .secondary-action {
   width: 100%;
@@ -263,6 +271,13 @@ mark {
 .primary-action.lime {
   background: var(--lime);
   color: var(--ink);
+}
+
+.primary-action:disabled {
+  cursor: default;
+  background: #fff8e7;
+  color: var(--muted);
+  box-shadow: 2px 2px 0 var(--line);
 }
 
 .secondary-action {
@@ -891,7 +906,7 @@ mark {
 }
 
 .evolution-chat-fullscreen {
-  --evolution-composer-clearance: 104px;
+  --evolution-composer-clearance: 118px;
   min-height: 0;
   flex: 1;
   display: grid;
@@ -984,15 +999,119 @@ mark {
   bottom: 80px;
 }
 
-.evolution-composer-dock .quick-prompts {
-  margin-top: 0;
+.evolution-composer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  align-items: stretch;
+}
+
+.evolution-attachment {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
   padding-bottom: 8px;
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+}
+
+.evolution-inline-attachment {
+  grid-template-columns: auto;
+  gap: 0;
+  padding-bottom: 0;
+}
+
+.evolution-attachment input {
+  display: none;
+}
+
+.evolution-attachment label {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: var(--blue);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 1000;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.evolution-attachment label:hover {
+  transform: translateY(-1px);
+  box-shadow: 2px 3px 0 rgb(20 20 16 / 28%);
+}
+
+.evolution-attachment label span {
+  min-width: auto;
+  overflow: visible;
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1;
+}
+
+.evolution-attachment span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.evolution-attachment-preview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 2px solid rgb(20 20 16 / 12%);
+  border-radius: 16px;
+  background: rgb(167 201 255 / 32%);
+  color: var(--ink);
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+}
+
+.evolution-attachment-preview b,
+.evolution-attachment-preview span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.evolution-attachment-preview b {
+  font-size: 12px;
+}
+
+.evolution-attachment-preview span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
 }
 
 .evolution-composer-dock .chat-composer {
   margin-top: 0;
   border-color: var(--line);
   box-shadow: none;
+}
+
+.evolution-composer-row .chat-composer {
+  min-width: 0;
+}
+
+.evolution-chat-composer {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+  padding-left: 7px;
 }
 
 .evolution-composer-dock .primary-action {
@@ -1096,6 +1215,185 @@ mark {
   margin-top: 34px;
   background: #fff8e7;
   color: var(--ink);
+}
+
+.recommendation-search-screen {
+  min-height: 100%;
+  background:
+    radial-gradient(circle at 18% 16%, rgb(167 201 255 / 18%), transparent 150px),
+    radial-gradient(circle at 86% 38%, rgb(217 255 85 / 14%), transparent 150px),
+    var(--ink);
+  color: #fff8e7;
+}
+
+.recommendation-search-content {
+  padding-bottom: 96px;
+}
+
+.search-hero {
+  position: relative;
+  overflow: hidden;
+  margin-top: 8px;
+  padding: 16px;
+  border: 2px solid rgb(255 248 231 / 22%);
+  border-radius: 30px;
+  background: linear-gradient(145deg, rgb(255 250 240 / 12%), rgb(255 250 240 / 4%));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 18%), 0 18px 50px rgb(0 0 0 / 22%);
+}
+
+.search-orbit {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  display: grid;
+  place-items: center;
+  margin: 4px auto 18px;
+  border: 2px dashed rgb(255 248 231 / 35%);
+  border-radius: 50%;
+  animation: search-orbit-spin 7s linear infinite;
+}
+
+.search-orbit span {
+  width: 68px;
+  height: 68px;
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--line);
+  border-radius: 24px;
+  background: var(--blue);
+  color: var(--ink);
+  box-shadow: 6px 6px 0 rgb(0 0 0 / 65%);
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-size: 28px;
+  font-weight: 1000;
+  animation: search-orbit-counter-spin 7s linear infinite;
+}
+
+.search-orbit i {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  background: var(--lime);
+  animation: search-node-pulse 1.6s ease-in-out infinite;
+}
+
+.search-orbit i:nth-of-type(1) {
+  top: 8px;
+  left: 28px;
+}
+
+.search-orbit i:nth-of-type(2) {
+  right: 6px;
+  top: 58px;
+  background: var(--peach);
+  animation-delay: .2s;
+}
+
+.search-orbit i:nth-of-type(3) {
+  left: 36px;
+  bottom: 4px;
+  background: var(--mint);
+  animation-delay: .4s;
+}
+
+.search-orbit i:nth-of-type(4) {
+  right: 34px;
+  bottom: 14px;
+  background: var(--violet);
+  animation-delay: .6s;
+}
+
+.search-kicker {
+  width: fit-content;
+  margin: 0 0 10px;
+  padding: 7px 10px;
+  border: 2px solid rgb(255 248 231 / 26%);
+  border-radius: 999px;
+  background: rgb(217 255 85 / 14%);
+  color: var(--lime);
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-size: 11px;
+  font-weight: 1000;
+}
+
+.search-progress {
+  overflow: hidden;
+  height: 12px;
+  margin: 18px 2px 16px;
+  border: 2px solid rgb(255 248 231 / 22%);
+  border-radius: 999px;
+  background: rgb(255 248 231 / 10%);
+}
+
+.search-progress span {
+  display: block;
+  width: 44%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--blue), var(--lime), var(--peach));
+  box-shadow: 0 0 18px rgb(167 201 255 / 42%);
+  animation: progress-sweep 2.2s ease-in-out infinite;
+}
+
+.search-steps {
+  display: grid;
+  gap: 10px;
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+}
+
+.search-step {
+  position: relative;
+  padding: 13px 14px 13px 46px;
+  border: 2px solid rgb(255 248 231 / 16%);
+  border-radius: 20px;
+  background: rgb(255 250 240 / 8%);
+  color: #fff8e7;
+}
+
+.search-step::before {
+  content: "";
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgb(255 248 231 / 35%);
+  border-radius: 50%;
+  background: rgb(255 248 231 / 12%);
+}
+
+.search-step.active {
+  border-color: rgb(167 201 255 / 78%);
+  background: rgb(167 201 255 / 12%);
+}
+
+.search-step.active::before {
+  border-color: var(--line);
+  background: var(--blue);
+  box-shadow: 0 0 0 6px rgb(167 201 255 / 16%);
+  animation: pulse 1.35s ease-in-out infinite;
+}
+
+.search-step b,
+.search-step span {
+  display: block;
+}
+
+.search-step b {
+  margin-bottom: 5px;
+  font-size: 13px;
+}
+
+.search-step span {
+  color: #d8ceb6;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.search-tip {
+  background: #eaf4ff;
 }
 
 .generation-content {
@@ -1271,6 +1569,29 @@ mark {
 @keyframes orbit-counter-spin {
   to {
     transform: rotate(-360deg);
+  }
+}
+
+@keyframes search-orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes search-orbit-counter-spin {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes search-node-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.28);
   }
 }
 
@@ -1826,6 +2147,10 @@ mark {
   white-space: nowrap;
 }
 
+.candidate-card strong.connection-status-pill {
+  background: var(--blue);
+}
+
 .candidate-hero {
   padding: 16px;
   border: 3px solid var(--line);
@@ -1864,6 +2189,20 @@ mark {
   color: var(--ink);
   font-size: 13px;
   line-height: 1.8;
+}
+
+.connection-feedback {
+  margin-top: 12px;
+  padding: 11px 12px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: var(--blue);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--line);
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-size: 12px;
+  font-weight: 1000;
+  line-height: 1.45;
 }
 
 .bottom-nav {

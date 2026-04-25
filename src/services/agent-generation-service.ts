@@ -191,8 +191,9 @@ async function persistExtractedKnowledge(
 }
 
 export async function generateAgentProfile(input: GenerateAgentProfileInput, aiClient: AiClient, options: GenerateAgentProfileOptions = {}) {
+  const displayName = input.displayName.trim();
   const { user, agent } = await createAgent({
-    displayName: input.displayName,
+    displayName,
     role: input.role,
     city: input.city
   });
@@ -244,7 +245,7 @@ export async function generateAgentProfile(input: GenerateAgentProfileInput, aiC
         sourceKind: 'manual',
         sourceType: 'manual_text',
         title: '基础资料',
-        rawText: `${input.displayName} 正在生成自己的数字分身。`
+        rawText: `${displayName} 正在生成自己的数字分身。`
       })
     );
   }

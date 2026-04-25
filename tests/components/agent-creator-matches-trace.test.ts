@@ -17,4 +17,17 @@ describe('AgentCreator matches A-to-A trace', () => {
     expect(styleSource).toContain('.matches-trace');
     expect(styleSource).toContain('.agent-trace');
   });
+
+  it('shows when a connection has been recorded before external sending', () => {
+    expect(componentSource).toContain('recordedConnectionIds');
+    expect(componentSource).toContain('connectionFeedback');
+    expect(componentSource).toContain('已记录连接，文案已复制');
+    expect(componentSource).toContain('已经记录连接请求');
+    expect(componentSource).toContain('disabled={isSelectedConnectionRecorded}');
+  });
+
+  it('styles recorded connection feedback as part of the icebreaker flow', () => {
+    expect(styleSource).toContain('.connection-feedback');
+    expect(styleSource).toContain('.connection-status-pill');
+  });
 });

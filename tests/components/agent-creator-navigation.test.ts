@@ -7,9 +7,12 @@ const componentSource = readFileSync(join(process.cwd(), 'src/components/agent-c
 describe('AgentCreator navigation copy', () => {
   it('uses product navigation labels instead of generation copy after setup', () => {
     expect(componentSource).toContain('<span>进化</span>');
-    expect(componentSource).toContain('<span>分身</span>');
+    expect(componentSource).toContain('<span>我的Agent</span>');
+    expect(componentSource).toContain('<Header title="我的Agent" action="⋯" />');
     expect(componentSource).toContain('<span>发现</span>');
     expect(componentSource).not.toContain('<span>生成</span>');
+    expect(componentSource).not.toContain('<span>分身</span>');
+    expect(componentSource).not.toContain('<Header title="分身页" action="⋯" />');
     expect(componentSource).not.toContain('<span>我的分身</span>');
     expect(componentSource).not.toContain('<span>名片</span>');
     expect(componentSource).not.toContain('<span>找人</span>');
@@ -18,6 +21,14 @@ describe('AgentCreator navigation copy', () => {
   it('does not prefill the nickname before first generation', () => {
     expect(componentSource).toContain("useState('')");
     expect(componentSource).not.toContain("useState('Jun')");
+  });
+
+  it('requires a trimmed nickname before entering the creation flow', () => {
+    expect(componentSource).toContain("const trimmedNickname = nickname.trim();");
+    expect(componentSource).toContain("setNicknameError('先填写昵称，再生成你的 Agent。');");
+    expect(componentSource).toContain("setNickname(trimmedNickname);");
+    expect(componentSource).toContain('disabled={!nickname.trim()}');
+    expect(componentSource).toContain('{nicknameError && <p className="field-error">{nicknameError}</p>}');
   });
 
   it('keeps the home CTA focused and reveals resident agents as discovery', () => {

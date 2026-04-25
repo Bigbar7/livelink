@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
+export const displayNameSchema = z.string().trim().min(1).max(40);
+
 export const createAgentSchema = z.object({
-  displayName: z.string().min(1).max(40),
+  displayName: displayNameSchema,
   agentName: z.string().min(1).max(60).optional(),
   role: z.string().max(80).optional(),
   city: z.string().max(80).optional()
