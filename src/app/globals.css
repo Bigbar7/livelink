@@ -891,6 +891,7 @@ mark {
 }
 
 .evolution-chat-fullscreen {
+  --evolution-composer-clearance: 104px;
   min-height: 0;
   flex: 1;
   display: grid;
@@ -959,6 +960,10 @@ mark {
 .evolution-thread .mini-bubble {
   max-width: 84%;
   box-shadow: 4px 4px 0 rgb(0 0 0 / 28%);
+}
+
+.evolution-thread [data-evolution-thread-end] {
+  flex: 0 0 var(--evolution-composer-clearance);
 }
 
 .evolution-composer-dock {

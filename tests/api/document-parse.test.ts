@@ -46,4 +46,17 @@ describe('POST /api/documents/parse', () => {
     expect(parserSource).toContain('pdf-parse');
     expect(parserSource).toContain('mammoth');
   });
+
+  it('loads the PDF parser through Node require to avoid Next route ESM bundling failures', async () => {
+    const parserSource = await import('node:fs/promises').then((fs) =>
+      fs.readFile(new URL('../../src/services/document-parser-service.ts', import.meta.url), 'utf8')
+    );
+
+    expect(parserSource).toContain('createRequire');
+    expect(parserSource).toContain("require('pdf-parse')");
+    expect(parserSource).toContain('process.cwd()');
+    expect(parserSource).toContain('pdf.worker.mjs');
+    expect(parserSource).toContain('setWorker');
+    expect(parserSource).not.toContain("import { PDFParse } from 'pdf-parse'");
+  });
 });

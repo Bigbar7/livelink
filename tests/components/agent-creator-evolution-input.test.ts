@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const componentSource = readFileSync(join(process.cwd(), 'src/components/agent-creator.tsx'), 'utf8');
+const styleSource = readFileSync(join(process.cwd(), 'src/app/globals.css'), 'utf8');
 
 describe('AgentCreator evolution input', () => {
   it('keeps first-time creation as multi-source input with optional AI chat', () => {
@@ -42,5 +43,11 @@ describe('AgentCreator evolution input', () => {
     expect(componentSource).toContain('evolutionThreadEndRef');
     expect(componentSource).toContain('scrollIntoView({ behavior:');
     expect(componentSource).toContain('data-evolution-thread-end');
+  });
+
+  it('reserves scrollable space below the latest evolution message for the docked composer', () => {
+    expect(styleSource).toContain('--evolution-composer-clearance');
+    expect(styleSource).toContain('[data-evolution-thread-end]');
+    expect(styleSource).toContain('flex: 0 0 var(--evolution-composer-clearance)');
   });
 });

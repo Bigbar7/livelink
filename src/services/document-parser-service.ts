@@ -1,5 +1,11 @@
 import mammoth from 'mammoth';
-import { PDFParse } from 'pdf-parse';
+import { createRequire } from 'node:module';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+type PdfParseModule = typeof import('pdf-parse');
+
+const require = createRequire(import.meta.url);
 
 const maxDocumentBytes = 8 * 1024 * 1024;
 
@@ -41,7 +47,15 @@ export function isSupportedDocument(fileName: string, fileType: string) {
   return isPdf(fileName, fileType) || isDocx(fileName, fileType) || isText(fileName, fileType);
 }
 
+function loadPdfParser() {
+  const pdfParse = require('pdf-parse') as PdfParseModule;
+  const workerPath = join(process.cwd(), 'node_modules/pdf-parse/dist/pdf-parse/cjs/pdf.worker.mjs');
+  pdfParse.PDFParse.setWorker(pathToFileURL(workerPath).toString());
+  return pdfParse.PDFParse;
+}
+
 async function parsePdf(buffer: Buffer) {
+  const PDFParse = loadPdfParser();
   const parser = new PDFParse({ data: buffer });
   try {
     const result = await parser.getText();
