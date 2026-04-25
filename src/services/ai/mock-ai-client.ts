@@ -64,7 +64,21 @@ export const mockAiClient: AiClient = {
       interests: ['主动社交', '个人知识库'],
       offers: ['产品设计', 'AI 应用落地'],
       wants: ['AI 工程化伙伴', '推荐系统伙伴'],
-      icebreakers: ['AI 如何提升社交匹配效率', '个人名片如何变成长期 Agent']
+      icebreakers: ['AI 如何提升社交匹配效率', '个人名片如何变成长期 Agent'],
+      analysis: {
+        recentUpdates: ['正在打磨 AI 社交名片和数字分身产品'],
+        careerHighlights: ['围绕推荐系统、关系沉淀和个人展示构建产品闭环'],
+        domainSignals: [
+          { name: 'AI 社交', evidence: '关注 AI 如何提升社交匹配效率' },
+          { name: '产品设计', evidence: '可以提供产品设计和 AI 应用落地能力' }
+        ],
+        persona: {
+          title: '产品型连接者',
+          description: '擅长把人的能力、需求和连接场景整理成可落地的产品系统',
+          confidence: 0.78
+        },
+        needs: ['AI 工程化伙伴', '推荐系统伙伴']
+      }
     };
   },
 

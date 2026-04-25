@@ -101,6 +101,34 @@ function conversationText(messages: ConversationMessage[] = []) {
   return messages.map((message) => `${message.role === 'user' ? '用户' : 'AI'}：${message.content}`).join('\n');
 }
 
+const factTypes = ['identity', 'skill', 'experience', 'project', 'topic', 'offer', 'want', 'achievement', 'link'] as const;
+
+function normalizeFactType(fact: { factType?: unknown; title?: unknown; summary?: unknown }) {
+  if (typeof fact.factType === 'string' && factTypes.includes(fact.factType as (typeof factTypes)[number])) {
+    return fact.factType;
+  }
+
+  const text = [fact.title, fact.summary].filter((value): value is string => typeof value === 'string').join(' ');
+
+  if (/基本信息|身份|个人|学校|学历|硕士|本科|地址|出生|城市|在读/.test(text)) return 'identity';
+  if (/找|寻找|希望|需求|想认识|合作伙伴/.test(text)) return 'want';
+  if (/提供|可以|能为|帮助|资源/.test(text)) return 'offer';
+  if (/项目|作品|产品|应用|系统/.test(text)) return 'project';
+  if (/技能|能力|擅长|工程师|开发|后端|前端|算法|设计/.test(text)) return 'skill';
+  if (/成就|成果|奖|增长|提升|负责/.test(text)) return 'achievement';
+  if (/链接|GitHub|Gitee|http|https/.test(text)) return 'link';
+
+  return 'topic';
+}
+
+function normalizeConfidence(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0.7;
+}
+
+function normalizeString(value: unknown, fallback = '') {
+  return typeof value === 'string' && value.trim() ? value.trim() : fallback;
+}
+
 export async function chatAgentEvolution(input: EvolutionChatInput, aiClient: AiClient) {
   if (!aiClient.chatEvolution) {
     throw new Error('Evolution chat is unavailable');
@@ -145,22 +173,24 @@ async function persistExtractedKnowledge(
 ) {
   return prisma.$transaction(async (tx) => {
     const facts = await Promise.all(
-      extracted.facts.map((fact) =>
-        tx.profileFact.create({
+      extracted.facts.map((fact) => {
+        const rawFact = fact as Record<string, unknown>;
+
+        return tx.profileFact.create({
           data: {
             userId: source.userId,
             agentId: source.agentId,
             sourceDocumentId: source.id,
-            factType: fact.factType,
-            title: fact.title,
-            summary: fact.summary,
-            evidenceText: fact.evidenceText,
+            factType: normalizeFactType(rawFact),
+            title: normalizeString(rawFact.title, '未命名事实'),
+            summary: normalizeString(rawFact.summary) || null,
+            evidenceText: normalizeString(rawFact.evidenceText) || null,
             sourceUrl: source.url,
-            confidence: fact.confidence,
+            confidence: normalizeConfidence(rawFact.confidence),
             status: 'confirmed'
           }
-        })
-      )
+        });
+      })
     );
 
     const projects = await Promise.all(

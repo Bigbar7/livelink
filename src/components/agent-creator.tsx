@@ -29,6 +29,22 @@ type AgentProfile = {
   offersJson: string;
   wantsJson: string;
   icebreakersJson: string;
+  analysisJson?: string;
+};
+
+type ProfileAnalysis = {
+  recentUpdates: string[];
+  careerHighlights: string[];
+  domainSignals: Array<{
+    name: string;
+    evidence?: string;
+  }>;
+  persona: {
+    title?: string;
+    description?: string;
+    confidence?: number;
+  };
+  needs: string[];
 };
 
 type GeneratedAgentResponse = {
@@ -129,6 +145,44 @@ function parseJsonList(value?: string) {
   }
 }
 
+function parseProfileAnalysis(value?: string): ProfileAnalysis {
+  const emptyAnalysis: ProfileAnalysis = {
+    recentUpdates: [],
+    careerHighlights: [],
+    domainSignals: [],
+    persona: {},
+    needs: []
+  };
+
+  if (!value) return emptyAnalysis;
+
+  try {
+    const parsed = JSON.parse(value) as Partial<ProfileAnalysis>;
+    const persona = parsed.persona && typeof parsed.persona === 'object' ? parsed.persona : {};
+
+    return {
+      recentUpdates: Array.isArray(parsed.recentUpdates) ? parsed.recentUpdates.filter((item): item is string => typeof item === 'string') : [],
+      careerHighlights: Array.isArray(parsed.careerHighlights) ? parsed.careerHighlights.filter((item): item is string => typeof item === 'string') : [],
+      domainSignals: Array.isArray(parsed.domainSignals)
+        ? parsed.domainSignals
+            .filter((item): item is { name: string; evidence?: string } => Boolean(item) && typeof item === 'object' && typeof item.name === 'string')
+            .map((item) => ({
+              name: item.name,
+              evidence: typeof item.evidence === 'string' ? item.evidence : undefined
+            }))
+        : [],
+      persona: {
+        title: typeof persona.title === 'string' ? persona.title : undefined,
+        description: typeof persona.description === 'string' ? persona.description : undefined,
+        confidence: typeof persona.confidence === 'number' ? persona.confidence : undefined
+      },
+      needs: Array.isArray(parsed.needs) ? parsed.needs.filter((item): item is string => typeof item === 'string') : []
+    };
+  } catch {
+    return emptyAnalysis;
+  }
+}
+
 function firstLetter(value: string) {
   return (value.trim()[0] || 'A').toUpperCase();
 }
@@ -220,9 +274,18 @@ export function AgentCreator() {
   const offers = parseJsonList(profile?.offersJson);
   const wants = parseJsonList(profile?.wantsJson);
   const icebreakers = parseJsonList(profile?.icebreakersJson);
-  const profileHighlights = [...skills, ...offers].filter(Boolean).slice(0, 4);
-  const profileDomains = [...tags, ...interests].filter(Boolean).slice(0, 4);
-  const hasPersonaSignals = Boolean(tags[0] || icebreakers[0]);
+  const analysis = parseProfileAnalysis(profile?.analysisJson);
+  const profileHighlights = (analysis.careerHighlights.length > 0 ? analysis.careerHighlights : [...skills, ...offers]).filter(Boolean).slice(0, 4);
+  const fallbackDomains = [...tags, ...interests].filter(Boolean).slice(0, 4);
+  const profileDomainSignals =
+    analysis.domainSignals.length > 0
+      ? analysis.domainSignals.slice(0, 4)
+      : fallbackDomains.map((domain) => ({ name: domain, evidence: '已提取' }));
+  const profileDomains = profileDomainSignals.map((domain) => domain.name);
+  const recentUpdates = analysis.recentUpdates.length > 0 ? analysis.recentUpdates.slice(0, 2) : [profile?.bio].filter((item): item is string => Boolean(item));
+  const profileNeeds = analysis.needs.length > 0 ? analysis.needs : wants;
+  const persona = analysis.persona;
+  const hasPersonaSignals = Boolean(persona.title || persona.description || tags[0] || icebreakers[0]);
   const contactHandle = nickname.trim() ? `@${nickname.trim()}` : `ID ${profile?.slug ?? 'agent'}`;
   const sparseProfileHint = '资料还不够，继续补充后再生成';
   const hasGenerated = Boolean(generated);
@@ -806,11 +869,11 @@ export function AgentCreator() {
                   <div className="activity-feed">
                     <div className="activity-card accent">
                       <b>最近在更新</b>
-                      <span>{profile.bio}</span>
+                      <span>{recentUpdates[0] || sparseProfileHint}</span>
                     </div>
                     <div className="activity-card">
                       <b>正在关注</b>
-                      <span>{profileDomains.slice(0, 3).join('、') || sparseProfileHint}</span>
+                      <span>{recentUpdates[1] || profileDomains.slice(0, 3).join('、') || sparseProfileHint}</span>
                     </div>
                   </div>
                 </ProfileSection>
@@ -834,13 +897,13 @@ export function AgentCreator() {
 
                 <ProfileSection eyebrow="DOMAINS" title="领域画像">
                   <div className="domain-grid">
-                    {profileDomains.map((domain) => (
-                      <div className="domain-pill" key={domain}>
-                        <b>{domain}</b>
-                        <span>已提取</span>
+                    {profileDomainSignals.map((domain) => (
+                      <div className="domain-pill" key={domain.name}>
+                        <b>{domain.name}</b>
+                        <span>{domain.evidence || '已提取'}</span>
                       </div>
                     ))}
-                    {profileDomains.length === 0 && <div className="profile-empty">{sparseProfileHint}</div>}
+                    {profileDomainSignals.length === 0 && <div className="profile-empty">{sparseProfileHint}</div>}
                   </div>
                 </ProfileSection>
 
@@ -849,8 +912,8 @@ export function AgentCreator() {
                     <div className="persona-beast">
                       <div className="beast-mark">{firstLetter(nickname)}</div>
                       <div>
-                        <b>{tags[0] ?? '待确认的人格线索'}</b>
-                        <span>{icebreakers[0] ?? '还没有足够资料生成稳定的人格描述。'}</span>
+                        <b>{persona.title ?? tags[0] ?? '待确认的人格线索'}</b>
+                        <span>{persona.description ?? icebreakers[0] ?? '还没有足够资料生成稳定的人格描述。'}</span>
                       </div>
                     </div>
                   ) : (
@@ -861,14 +924,14 @@ export function AgentCreator() {
                 <ProfileSection eyebrow="NEEDS" title="最近需求">
                   <div className="need-card">
                     <b>我最近想找</b>
-                    <span>{wants.join('、') || sparseProfileHint}</span>
+                    <span>{profileNeeds.join('、') || sparseProfileHint}</span>
                   </div>
                   {icebreakers.length > 0 && <div className="icebreaker-strip">{icebreakers.join('、')}</div>}
                 </ProfileSection>
 
                 <div className="summary-card compact">
                   <SummaryRow title="我能提供">{offers.join('、') || sparseProfileHint}</SummaryRow>
-                  <SummaryRow title="我正在寻找">{wants.join('、') || sparseProfileHint}</SummaryRow>
+                  <SummaryRow title="我正在寻找">{profileNeeds.join('、') || sparseProfileHint}</SummaryRow>
                 </div>
                 <div className="sticky-actions">
                   <button className="primary-action lime" onClick={() => setStep('find')}>

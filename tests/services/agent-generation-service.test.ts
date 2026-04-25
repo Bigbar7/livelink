@@ -53,6 +53,81 @@ describe('agent-generation-service', () => {
     expect(aiClient.generateWiki).not.toHaveBeenCalled();
   });
 
+  it('persists dedicated profile analysis for the personal analysis page', async () => {
+    const generateProfileDraft = vi.fn<NonNullable<AiClient['generateProfileDraft']>>(async () => ({
+      facts: [],
+      projects: [],
+      card: {
+        headline: 'AI 产品 Builder',
+        bio: '正在做 Livelink',
+        tags: ['AI 社交'],
+        skills: ['产品定义'],
+        interests: ['价值社交'],
+        offers: ['AI 产品设计'],
+        wants: ['推荐系统工程师'],
+        icebreakers: ['聊聊 AI 如何理解人'],
+        analysis: {
+          recentUpdates: ['正在把个人资料转成可推荐的 Agent Profile'],
+          careerHighlights: ['从 0 到 1 搭建 AI 社交名片产品'],
+          domainSignals: [{ name: 'AI 社交', evidence: '用户明确提到 Livelink 和价值社交' }],
+          persona: {
+            title: '产品型连接者',
+            description: '倾向于把抽象关系问题拆成可落地的产品系统',
+            confidence: 0.82
+          },
+          needs: ['寻找推荐系统工程师']
+        }
+      }
+    }));
+
+    const result = await generateAgentProfile(
+      {
+        displayName: 'Jun',
+        text: '我在做 Livelink，希望把个人资料转成可推荐的 Agent Profile，想找推荐系统工程师。'
+      },
+      { ...mockAiClient, generateProfileDraft }
+    );
+
+    const analysisJson = (result.profile as unknown as { analysisJson?: string }).analysisJson;
+
+    expect(analysisJson).toBeTruthy();
+    expect(JSON.parse(analysisJson ?? '{}')).toMatchObject({
+      recentUpdates: ['正在把个人资料转成可推荐的 Agent Profile'],
+      persona: {
+        title: '产品型连接者'
+      },
+      needs: ['寻找推荐系统工程师']
+    });
+  });
+
+  it('normalizes AI facts that are missing factType before persisting', async () => {
+    const generateProfileDraft = vi.fn<NonNullable<AiClient['generateProfileDraft']>>(async () => ({
+      facts: [
+        {
+          title: '个人基本信息',
+          summary: 'Lavine，香港城市大学计算机科学硕士在读，定位后端软件工程师。',
+          evidenceText: 'Lavine，香港城市大学计算机科学硕士在读，后端软件工程师。',
+          confidence: 0.86
+        }
+      ] as Awaited<ReturnType<NonNullable<AiClient['generateProfileDraft']>>>['facts'],
+      projects: [],
+      card: await mockAiClient.generateCard({ wikiMarkdown: 'profile' })
+    }));
+
+    const result = await generateAgentProfile(
+      {
+        displayName: 'Lavine',
+        text: 'Lavine，香港城市大学计算机科学硕士在读，定位后端软件工程师。'
+      },
+      { ...mockAiClient, generateProfileDraft }
+    );
+
+    const fact = await prisma.profileFact.findFirstOrThrow({ where: { agentId: result.agent.id } });
+
+    expect(fact.title).toBe('个人基本信息');
+    expect(fact.factType).toBe('identity');
+  });
+
   it('adds imported GitHub material to the combined AI draft input', async () => {
     const generateProfileDraft = vi.fn<NonNullable<AiClient['generateProfileDraft']>>(async (input) => ({
       facts: [

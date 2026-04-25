@@ -1,5 +1,20 @@
 import type { ExtractedKnowledge } from '@/types/domain';
 
+export type ProfileAnalysis = {
+  recentUpdates: string[];
+  careerHighlights: string[];
+  domainSignals: Array<{
+    name: string;
+    evidence?: string;
+  }>;
+  persona?: {
+    title?: string;
+    description?: string;
+    confidence?: number;
+  };
+  needs: string[];
+};
+
 export type GeneratedProfileCard = {
   headline: string;
   bio: string;
@@ -9,6 +24,7 @@ export type GeneratedProfileCard = {
   offers: string[];
   wants: string[];
   icebreakers: string[];
+  analysis?: ProfileAnalysis;
 };
 
 export type GeneratedAgentProfileDraft = ExtractedKnowledge & {

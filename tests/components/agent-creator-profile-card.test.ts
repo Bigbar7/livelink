@@ -46,4 +46,13 @@ describe('AgentCreator profile card template', () => {
     expect(componentSource).not.toContain('价值社交</b><span>34%</span>');
     expect(componentSource).toContain('资料还不够，继续补充后再生成');
   });
+
+  it('uses dedicated analysis fields before falling back to card arrays', () => {
+    expect(componentSource).toContain('parseProfileAnalysis(profile?.analysisJson)');
+    expect(componentSource).toContain('analysis.recentUpdates');
+    expect(componentSource).toContain('analysis.careerHighlights');
+    expect(componentSource).toContain('analysis.domainSignals');
+    expect(componentSource).toContain('analysis.persona');
+    expect(componentSource).toContain('analysis.needs');
+  });
 });

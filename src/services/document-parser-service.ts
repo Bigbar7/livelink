@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 type PdfParseModule = typeof import('pdf-parse');
+type CanvasGlobalName = 'DOMMatrix' | 'DOMPoint' | 'DOMRect' | 'ImageData' | 'Path2D';
+type CanvasModule = Partial<Record<CanvasGlobalName, unknown>>;
 
 const require = createRequire(import.meta.url);
 
@@ -47,7 +49,24 @@ export function isSupportedDocument(fileName: string, fileType: string) {
   return isPdf(fileName, fileType) || isDocx(fileName, fileType) || isText(fileName, fileType);
 }
 
+function installPdfCanvasGlobals() {
+  const canvas = require('@napi-rs/canvas') as CanvasModule;
+  const canvasGlobals = globalThis as typeof globalThis & Partial<Record<CanvasGlobalName, unknown>>;
+  const installGlobal = (name: CanvasGlobalName, value: unknown) => {
+    if (typeof canvasGlobals[name] === 'undefined' && typeof value !== 'undefined') {
+      Object.defineProperty(canvasGlobals, name, { value, configurable: true, writable: true });
+    }
+  };
+
+  installGlobal('DOMMatrix', canvas.DOMMatrix);
+  installGlobal('DOMPoint', canvas.DOMPoint);
+  installGlobal('DOMRect', canvas.DOMRect);
+  installGlobal('ImageData', canvas.ImageData);
+  installGlobal('Path2D', canvas.Path2D);
+}
+
 function loadPdfParser() {
+  installPdfCanvasGlobals();
   const pdfParse = require('pdf-parse') as PdfParseModule;
   const workerPath = join(process.cwd(), 'node_modules/pdf-parse/dist/pdf-parse/cjs/pdf.worker.mjs');
   pdfParse.PDFParse.setWorker(pathToFileURL(workerPath).toString());

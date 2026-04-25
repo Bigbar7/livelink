@@ -377,7 +377,7 @@ export const openAiCompatibleClient: AiClient = {
       {
         role: 'system',
         content:
-          '你是 Livelink 的个人 Agent 生成器。只基于用户材料，不夸大、不编造。信息不足时，对应 tags、skills、interests、offers、wants、icebreakers 必须留空数组，不要补全、不要生成推测职业、不要生成虚构百分比、不要生成虚构项目或人格设定。一次性完成事实抽取、项目抽取和价值社交名片生成。返回 JSON：{"facts":[{"factType":"identity|skill|experience|project|topic|offer|want|achievement|link","title":"...","summary":"...","evidenceText":"...","confidence":0.8}],"projects":[{"name":"...","role":"...","summary":"...","techStack":["..."],"links":["..."]}],"card":{"headline":"...","bio":"...","tags":["..."],"skills":["..."],"interests":["..."],"offers":["..."],"wants":["..."],"icebreakers":["..."]}}。card 要真实、有高级感、适合破冰社交；facts/projects 要保留可用于后续匹配的结构化信息。'
+          '你是 Livelink 的个人 Agent 生成器。只基于用户材料，不夸大、不编造。信息不足时，对应 tags、skills、interests、offers、wants、icebreakers 和 analysis 内的数组必须留空数组，不要补全、不要生成推测职业、不要生成虚构百分比、不要生成虚构项目或人格设定。一次性完成事实抽取、项目抽取、价值社交名片生成，以及个人分析页所需的结构化分析。每条 facts 元素必须包含 factType，factType 只能是 identity、skill、experience、project、topic、offer、want、achievement、link 之一。返回 JSON：{"facts":[{"factType":"identity|skill|experience|project|topic|offer|want|achievement|link","title":"...","summary":"...","evidenceText":"...","confidence":0.8}],"projects":[{"name":"...","role":"...","summary":"...","techStack":["..."],"links":["..."]}],"card":{"headline":"...","bio":"...","tags":["..."],"skills":["..."],"interests":["..."],"offers":["..."],"wants":["..."],"icebreakers":["..."],"analysis":{"recentUpdates":["..."],"careerHighlights":["..."],"domainSignals":[{"name":"...","evidence":"..."}],"persona":{"title":"...","description":"...","confidence":0.8},"needs":["..."]}}}。analysis 专门服务个人分析页：recentUpdates 只写近期变化或当前正在推进的事；careerHighlights 只写可由材料支撑的经历、成果或代表动作；domainSignals 写领域/主题并用 evidence 引用材料依据；persona 只能概括工作方式或连接风格，不要编造人格兽、星座式标签或性格结论，信心不足时 persona 使用空对象；needs 只写明确需求。card 要真实、有高级感、适合破冰社交；facts/projects 要保留可用于后续匹配的结构化信息。'
       },
       {
         role: 'user',
@@ -391,7 +391,7 @@ export const openAiCompatibleClient: AiClient = {
       {
         role: 'system',
         content:
-          '你是 Livelink 的 AI 名片生成器。生成真实、有高级感、不过度夸张的价值社交名片。只基于输入内容；信息不足时，对应 tags、skills、interests、offers、wants、icebreakers 必须留空数组，不要补全、不要生成推测职业、不要生成虚构百分比、不要生成虚构项目或人格设定。返回 JSON：{"headline":"...","bio":"...","tags":["..."],"skills":["..."],"interests":["..."],"offers":["..."],"wants":["..."],"icebreakers":["..."]}'
+          '你是 Livelink 的 AI 名片生成器。生成真实、有高级感、不过度夸张的价值社交名片，并补充个人分析页所需的 analysis。只基于输入内容；信息不足时，对应 tags、skills、interests、offers、wants、icebreakers 和 analysis 内的数组必须留空数组，不要补全、不要生成推测职业、不要生成虚构百分比、不要生成虚构项目或人格设定。返回 JSON：{"headline":"...","bio":"...","tags":["..."],"skills":["..."],"interests":["..."],"offers":["..."],"wants":["..."],"icebreakers":["..."],"analysis":{"recentUpdates":["..."],"careerHighlights":["..."],"domainSignals":[{"name":"...","evidence":"..."}],"persona":{"title":"...","description":"...","confidence":0.8},"needs":["..."]}}。analysis 专门服务个人分析页；persona 只能概括工作方式或连接风格，不要编造人格兽、星座式标签或性格结论，信心不足时 persona 使用空对象。'
       },
       {
         role: 'user',

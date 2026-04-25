@@ -141,6 +141,7 @@ model AgentProfile {
   offersJson      String    @default("[]")
   wantsJson       String    @default("[]")
   icebreakersJson String    @default("[]")
+  analysisJson    String    @default("{}")
   templateKey     String    @default("default")
   visibility      String    @default("public")
   publishedAt     DateTime?

@@ -2,6 +2,10 @@ import { prisma } from '@/lib/db';
 import { slugifyName } from '@/lib/slug';
 import type { AiClient, GeneratedProfileCard } from '@/services/ai/ai-client';
 
+function stringifyAnalysis(generated: GeneratedProfileCard) {
+  return JSON.stringify(generated.analysis ?? {});
+}
+
 function factsToCardPrompt(
   facts: Array<{ title: string; summary: string | null; factType: string }>,
   projects: Array<{ name: string; role: string | null; summary: string }>
@@ -41,6 +45,7 @@ export async function generateCardFromWiki(wikiId: string, aiClient: AiClient) {
       offersJson: JSON.stringify(generated.offers),
       wantsJson: JSON.stringify(generated.wants),
       icebreakersJson: JSON.stringify(generated.icebreakers),
+      analysisJson: stringifyAnalysis(generated),
       templateKey: 'default'
     }
   });
@@ -77,6 +82,7 @@ export async function generatePublishedCardFromKnowledge(agentId: string, aiClie
       offersJson: JSON.stringify(generated.offers),
       wantsJson: JSON.stringify(generated.wants),
       icebreakersJson: JSON.stringify(generated.icebreakers),
+      analysisJson: stringifyAnalysis(generated),
       templateKey: 'default',
       publishedAt: new Date()
     }
@@ -107,6 +113,7 @@ export async function publishGeneratedCard(agentId: string, generated: Generated
       offersJson: JSON.stringify(generated.offers),
       wantsJson: JSON.stringify(generated.wants),
       icebreakersJson: JSON.stringify(generated.icebreakers),
+      analysisJson: stringifyAnalysis(generated),
       templateKey: 'default',
       publishedAt: new Date()
     }
