@@ -21,8 +21,9 @@ describe('AgentCreator navigation copy', () => {
   });
 
   it('keeps the home CTA focused and reveals resident agents as discovery', () => {
-    expect(componentSource).toContain('discovery-toggle');
-    expect(componentSource).toContain('发现已入驻 Agent');
+    expect(componentSource).toContain('scroll-cue');
+    expect(componentSource).toContain('下面有人');
+    expect(componentSource).toContain('已经入住的人');
     expect(componentSource).toContain('launch-transition');
     expect(componentSource).toContain('setTimeout(() => setStep');
   });

@@ -20,6 +20,18 @@ export type GenerateAgentProfileInput = {
   links?: LinkInput[];
 };
 
+type ConversationMessage = {
+  role: 'assistant' | 'user';
+  content: string;
+};
+
+export type EvolveAgentProfileInput = {
+  userId: string;
+  agentId: string;
+  text?: string;
+  conversation?: ConversationMessage[];
+};
+
 function inferSourceType(url: string) {
   if (url.includes('github.com')) return 'github';
   if (url.includes('gitee.com')) return 'gitee';
@@ -30,6 +42,10 @@ function inferSourceType(url: string) {
 
 function sourceText(source: Awaited<ReturnType<typeof addSourceDocument>>) {
   return [`标题：${source.title ?? '用户资料'}`, source.rawText, source.userNote].filter(Boolean).join('\n\n');
+}
+
+function conversationText(messages: ConversationMessage[] = []) {
+  return messages.map((message) => `${message.role === 'user' ? '用户' : 'AI'}：${message.content}`).join('\n');
 }
 
 async function persistExtractedKnowledge(
@@ -177,6 +193,79 @@ export async function generateAgentProfile(input: GenerateAgentProfileInput, aiC
     user,
     agent,
     sources,
+    extracted,
+    profile
+  };
+}
+
+export async function evolveAgentProfile(input: EvolveAgentProfileInput, aiClient: AiClient) {
+  const agent = await prisma.agent.findFirstOrThrow({
+    where: {
+      id: input.agentId,
+      userId: input.userId
+    },
+    include: {
+      user: true,
+      cards: {
+        orderBy: { updatedAt: 'desc' },
+        take: 1
+      }
+    }
+  });
+
+  const latestProfile = agent.cards[0];
+  const messageText = conversationText(input.conversation);
+  const rawText = [
+    latestProfile
+      ? [
+          '当前分身摘要：',
+          `定位：${latestProfile.headline}`,
+          `简介：${latestProfile.bio}`,
+          `标签：${latestProfile.tagsJson}`,
+          `能力：${latestProfile.skillsJson}`,
+          `需求：${latestProfile.wantsJson}`
+        ].join('\n')
+      : '',
+    messageText ? `本轮 AI 对话：\n${messageText}` : '',
+    input.text?.trim() ? `用户补充：\n${input.text.trim()}` : ''
+  ]
+    .filter(Boolean)
+    .join('\n\n---\n\n');
+
+  const source = await addSourceDocument({
+    userId: agent.userId,
+    agentId: agent.id,
+    sourceKind: 'evolution',
+    sourceType: 'ai_conversation',
+    title: '分身进化对话',
+    rawText: rawText || `${agent.user.displayName} 正在进化自己的数字分身。`
+  });
+
+  if (aiClient.generateProfileDraft) {
+    const draft = await aiClient.generateProfileDraft({
+      title: '分身进化对话',
+      text: sourceText(source)
+    });
+    const extracted = [await persistExtractedKnowledge(source, draft)];
+    const profile = await publishGeneratedCard(agent.id, draft.card);
+
+    return {
+      user: agent.user,
+      agent,
+      sources: [source],
+      extracted,
+      profile
+    };
+  }
+
+  const extracted = [await extractKnowledgeFromSource(source.id, aiClient)];
+  await confirmAgentKnowledge(agent.id);
+  const profile = await generatePublishedCardFromKnowledge(agent.id, aiClient);
+
+  return {
+    user: agent.user,
+    agent,
+    sources: [source],
     extracted,
     profile
   };

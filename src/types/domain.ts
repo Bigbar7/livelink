@@ -1,4 +1,4 @@
-export type SourceKind = 'manual' | 'resume' | 'link';
+export type SourceKind = 'manual' | 'resume' | 'link' | 'evolution';
 export type SourceType =
   | 'manual_text'
   | 'github'

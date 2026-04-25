@@ -1,0 +1,33 @@
+import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+const componentSource = readFileSync(join(process.cwd(), 'src/components/agent-creator.tsx'), 'utf8');
+
+describe('AgentCreator evolution input', () => {
+  it('keeps first-time creation as multi-source input with optional AI chat', () => {
+    expect(componentSource).toContain("const [pasteText, setPasteText] = useState('')");
+    expect(componentSource).toContain("type InputMode = 'text' | 'file' | 'link' | 'chat'");
+    expect(componentSource).toContain('创建分身 · 多资料入口');
+    expect(componentSource).toContain('粘贴文本');
+    expect(componentSource).toContain('上传附件');
+    expect(componentSource).toContain('上传链接');
+    expect(componentSource).toContain('AI 对话');
+    expect(componentSource).toContain('生成我的分身');
+
+    expect(componentSource).not.toContain('const sampleText');
+    expect(componentSource).not.toContain('voice-panel');
+    expect(componentSource).not.toContain('useState(\'https://github.com/jun/livelink');
+  });
+
+  it('uses AI conversation as the main entry after a profile exists', () => {
+    expect(componentSource).toContain('进化分身 · AI 对话主入口');
+    expect(componentSource).toContain('系统识别到你已有分身');
+    expect(componentSource).toContain('evolution-screen');
+    expect(componentSource).toContain('evolution-chat-fullscreen');
+    expect(componentSource).toContain('evolution-composer-dock');
+    expect(componentSource).toContain('/api/agents/evolve');
+    expect(componentSource).toContain('保存并优化');
+    expect(componentSource).not.toContain('提交并生成 Agent');
+  });
+});
