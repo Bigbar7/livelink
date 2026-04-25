@@ -8,3 +8,4 @@ prisma/dev.db-journal
 .DS_Store
 coverage/
 tsconfig.tsbuildinfo
+.superpowers/
