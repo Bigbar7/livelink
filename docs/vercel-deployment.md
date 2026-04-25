@@ -32,22 +32,20 @@ DATABASE_URL=postgresql://...
 
 ## 3. 数据库注意事项
 
-当前本地默认使用：
+当前 Prisma schema 与正式部署统一使用 PostgreSQL：
 
 ```env
-DATABASE_URL=file:./dev.db
+DATABASE_URL=postgresql://...
 ```
 
-这个 SQLite 文件适合本地开发，不适合 Vercel 生产环境。
-
-正式部署建议使用：
+推荐使用：
 
 - Vercel Postgres
 - Neon
 - Supabase Postgres
 - Railway Postgres
 
-切换到 PostgreSQL 时，需要同步调整 Prisma datasource provider 和迁移策略。
+如果临时改回本地 SQLite，必须同步调整 Prisma datasource provider 和迁移策略；不要把 SQLite schema 部署到使用 PostgreSQL URL 的环境。
 
 ## 4. TLS 注意事项
 
@@ -71,4 +69,3 @@ Vercel 上不要默认配置这个变量。
 → 部署
 → 验证首页、Agent 生成、推荐和连接流程
 ```
-

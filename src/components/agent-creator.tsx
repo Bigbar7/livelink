@@ -38,6 +38,12 @@ type CurrentSessionResponse = {
   profile: AgentProfile | null;
 } | null;
 
+type ParsedDocumentResponse = {
+  fileName: string;
+  fileType: string;
+  text: string;
+};
+
 type RecommendationItem = {
   profile: AgentProfile;
   score: number;
@@ -96,12 +102,15 @@ function profileToCandidate(item: RecommendationItem): CandidateView {
 }
 
 async function readApi<T>(url: string, init?: RequestInit) {
+  const isFormData = init?.body instanceof FormData;
   const response = await fetch(url, {
     ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...init?.headers
-    }
+    headers: isFormData
+      ? init?.headers
+      : {
+          'Content-Type': 'application/json',
+          ...init?.headers
+        }
   });
   const contentType = response.headers.get('content-type') ?? '';
   if (!contentType.includes('application/json')) {
@@ -118,10 +127,14 @@ async function readApi<T>(url: string, init?: RequestInit) {
 export function AgentCreator() {
   const [step, setStep] = useState<FlowStep>('home');
   const [showNameModal, setShowNameModal] = useState(false);
-  const [nickname, setNickname] = useState('Jun');
+  const [nickname, setNickname] = useState('');
+  const [showDiscovery, setShowDiscovery] = useState(false);
+  const [isLaunching, setIsLaunching] = useState(false);
   const [mode, setMode] = useState<InputMode>('text');
   const [pasteText, setPasteText] = useState(sampleText);
   const [fileName, setFileName] = useState('');
+  const [fileText, setFileText] = useState('');
+  const [fileParsingStatus, setFileParsingStatus] = useState('');
   const [linkText, setLinkText] = useState('https://github.com/jun/livelink\nhttps://www.xiaohongshu.com/user/profile/demo');
   const [isRecording, setIsRecording] = useState(false);
   const [generated, setGenerated] = useState<GeneratedAgentResponse | null>(null);
@@ -138,13 +151,24 @@ export function AgentCreator() {
   const wants = parseJsonList(profile?.wantsJson);
   const icebreakers = parseJsonList(profile?.icebreakersJson);
   const hasGenerated = Boolean(generated);
+  const agentInputCopy = hasGenerated
+    ? {
+        pill: '继续优化 · 让 Agent 更懂你',
+        description: '补充新资料后，我们会在现有 Agent Profile 基础上优化你的数字分身。',
+        submit: '保存并优化 Agent'
+      }
+    : {
+        pill: '首次生成 · 让 Agent 认识你',
+        description: '资料会进入后端数据库，生成你的 Agent Profile。',
+        submit: '提交并生成 Agent'
+      };
   const showBottomNav = hasGenerated && step !== 'home' && step !== 'generating';
 
   const activeText = useMemo(() => {
     if (mode === 'text') return pasteText;
-    if (mode === 'file') return fileName ? `用户上传了文件：${fileName}` : '';
+    if (mode === 'file') return fileText || (fileName ? `用户上传了文件：${fileName}` : '');
     return linkText;
-  }, [fileName, linkText, mode, pasteText]);
+  }, [fileName, fileText, linkText, mode, pasteText]);
 
   useEffect(() => {
     Promise.allSettled([
@@ -176,7 +200,9 @@ export function AgentCreator() {
 
   const confirmName = () => {
     setShowNameModal(false);
-    setStep('input');
+    setIsLaunching(true);
+    setTimeout(() => setStep('input'), 260);
+    setTimeout(() => setIsLaunching(false), 520);
   };
 
   const mockRecord = () => {
@@ -186,9 +212,31 @@ export function AgentCreator() {
     setPasteText(voiceText);
   };
 
-  const handleFile = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) setFileName(file.name);
+    if (!file) return;
+
+    setError('');
+    setFileName(file.name);
+    setFileText('');
+    setFileParsingStatus('正在解析文件内容...');
+
+    const formData = new FormData();
+    formData.set('file', file);
+
+    try {
+      const data = await readApi<ParsedDocumentResponse>('/api/documents/parse', {
+        method: 'POST',
+        body: formData,
+        headers: {}
+      });
+      setFileName(data.fileName);
+      setFileText(data.text);
+      setFileParsingStatus(data.text ? `已解析 ${data.text.length} 个字符，可直接生成。` : '文件已读取，但没有解析到可用文本。');
+    } catch (parseError) {
+      setFileParsingStatus('');
+      setError(parseError instanceof Error ? parseError.message : '文件解析失败');
+    }
   };
 
   const generateAgent = async () => {
@@ -204,7 +252,7 @@ export function AgentCreator() {
           displayName: nickname,
           text: mode === 'text' ? activeText : undefined,
           fileName: mode === 'file' ? fileName : undefined,
-          fileText: mode === 'file' ? activeText : undefined,
+          fileText: mode === 'file' ? fileText : undefined,
           links
         })
       });
@@ -259,6 +307,12 @@ export function AgentCreator() {
     <main className={`app-shell step-${step}`}>
       <div className="phone">
         <div className={`screen ${step === 'generating' || step === 'share' ? 'dark' : ''} ${showBottomNav ? 'has-bottom-nav' : ''}`}>
+          {isLaunching && (
+            <div className="launch-transition" aria-live="polite">
+              <span>{nickname ? firstLetter(nickname) : '你'}</span>
+              <b>正在打开你的 Agent 工作台</b>
+            </div>
+          )}
           {isBooting && (
             <section className="generating-screen">
               <div className="content">
@@ -294,7 +348,18 @@ export function AgentCreator() {
                   生成我的 Agent
                 </button>
               </div>
-              <ResidentProfiles profiles={residentProfiles} />
+              <div className="home-discovery">
+                <button
+                  className="discovery-toggle"
+                  type="button"
+                  aria-expanded={showDiscovery}
+                  onClick={() => setShowDiscovery((current) => !current)}
+                >
+                  <span>发现已入驻 Agent</span>
+                  <b>{showDiscovery ? '⌃' : '⌄'}</b>
+                </button>
+                {showDiscovery && <ResidentProfiles profiles={residentProfiles} />}
+              </div>
               {showNameModal && (
                 <div className="modal-backdrop">
                   <div className="name-modal">
@@ -317,13 +382,13 @@ export function AgentCreator() {
             <section className="input-screen">
               <Header title={`Hi, ${nickname || '你好'}`} action="?" />
               <div className="content">
-                <Pill>首次生成 · 让 Agent 认识你</Pill>
+                <Pill>{agentInputCopy.pill}</Pill>
                 <h2 className="page-title">
                   选择一种
                   <br />
                   <mark>输入方式</mark>
                 </h2>
-                <p className="muted">资料会进入后端数据库，生成你的 Agent Profile。</p>
+                <p className="muted">{agentInputCopy.description}</p>
                 {error && <p className="error-text">{error}</p>}
                 <div className="mode-tabs">
                   <button className={mode === 'text' ? 'active' : ''} onClick={() => setMode('text')}>
@@ -357,11 +422,13 @@ export function AgentCreator() {
                 )}
                 {mode === 'file' && (
                   <div className="upload-panel">
-                    <div className="file-card">PDF</div>
+                    <div className="file-card">{fileName.toLowerCase().endsWith('.docx') ? 'DOC' : 'PDF'}</div>
                     <b>{fileName || '上传简历 / BP / 作品集'}</b>
-                    <span>当前先上传文件名并进入后端生成链路，后续接入真实文件解析。</span>
-                    <input id="resume-upload" type="file" onChange={handleFile} />
-                    <label htmlFor="resume-upload">选择文件</label>
+                    <span>支持 PDF、Word .docx、TXT / Markdown。解析后的文本会进入后端生成链路。</span>
+                    {fileParsingStatus && <small>{fileParsingStatus}</small>}
+                    {fileText && <textarea className="file-preview" value={fileText} onChange={(event) => setFileText(event.target.value)} />}
+                    <input id="resume-upload" type="file" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown" onChange={handleFile} />
+                    <label htmlFor="resume-upload">{fileText ? '重新选择文件' : '选择文件'}</label>
                   </div>
                 )}
                 {mode === 'link' && (
@@ -379,7 +446,7 @@ export function AgentCreator() {
                 )}
                 <div className="sticky-actions">
                   <button className="primary-action" onClick={generateAgent}>
-                    提交并生成 Agent
+                    {agentInputCopy.submit}
                   </button>
                 </div>
               </div>
@@ -609,8 +676,8 @@ function ResidentProfiles({ profiles }: { profiles: AgentProfile[] }) {
   return (
     <div className="resident-section">
       <div className="resident-title">
-        <b>已入驻 Agent</b>
-        <span>真实发布</span>
+        <b>发现</b>
+        <span>已入驻 Agent</span>
       </div>
       <div className="resident-list">
         {profiles.length === 0 ? (
@@ -672,15 +739,15 @@ function BottomNav({ currentStep, onNavigate }: { currentStep: FlowStep; onNavig
     <nav className="bottom-nav" aria-label="主导航">
       <button className={activeKey === 'create' ? 'active' : ''} onClick={() => onNavigate('input')}>
         <b>＋</b>
-        <span>生成</span>
+        <span>进化</span>
       </button>
       <button className={activeKey === 'card' ? 'active' : ''} onClick={() => onNavigate('card')}>
         <b>◈</b>
-        <span>名片</span>
+        <span>分身</span>
       </button>
       <button className={activeKey === 'find' ? 'active' : ''} onClick={() => onNavigate('find')}>
         <b>⌕</b>
-        <span>找人</span>
+        <span>发现</span>
       </button>
       <button className={activeKey === 'connect' ? 'active' : ''} onClick={() => onNavigate('icebreaker')}>
         <b>✉</b>
