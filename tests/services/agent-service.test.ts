@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { prisma } from '@/lib/db';
-import { createAgent, getCurrentUserSession, getMyAgentState } from '@/services/agent-service';
+import { createAgent, getCurrentUserSession, getMyAgentState, resetAgentPersonalInfo } from '@/services/agent-service';
 
 describe('agent-service', () => {
   beforeEach(async () => {
@@ -66,5 +66,88 @@ describe('agent-service', () => {
     expect(session.user.id).toBe(created.user.id);
     expect(session.agent.id).toBe(created.agent.id);
     expect(session.profile?.id).toBe(profile.id);
+  });
+
+  it('deletes agent personal data while preserving nickname and contact source', async () => {
+    const created = await createAgent({ displayName: 'Jun', role: 'AI Product Builder', city: 'Shanghai' });
+    const contactSource = await prisma.sourceDocument.create({
+      data: {
+        userId: created.user.id,
+        agentId: created.agent.id,
+        sourceKind: 'manual',
+        sourceType: 'contact',
+        title: '联系方式',
+        rawText: '联系方式：wx_jun7'
+      }
+    });
+    const resumeSource = await prisma.sourceDocument.create({
+      data: {
+        userId: created.user.id,
+        agentId: created.agent.id,
+        sourceKind: 'resume',
+        sourceType: 'resume',
+        title: 'resume.pdf',
+        rawText: 'private resume'
+      }
+    });
+    await prisma.profileFact.create({
+      data: {
+        userId: created.user.id,
+        agentId: created.agent.id,
+        sourceDocumentId: resumeSource.id,
+        factType: 'skill',
+        title: 'AI 产品',
+        status: 'confirmed'
+      }
+    });
+    await prisma.profileProject.create({
+      data: {
+        userId: created.user.id,
+        agentId: created.agent.id,
+        name: 'Private project',
+        summary: 'Private summary'
+      }
+    });
+    const wiki = await prisma.profileWiki.create({
+      data: {
+        userId: created.user.id,
+        agentId: created.agent.id,
+        version: 1,
+        contentJson: '{}',
+        markdown: '# private'
+      }
+    });
+    const profile = await prisma.agentProfile.create({
+      data: {
+        userId: created.user.id,
+        agentId: created.agent.id,
+        wikiId: wiki.id,
+        slug: 'jun-agent',
+        status: 'published',
+        headline: 'AI Builder',
+        bio: 'Private bio'
+      }
+    });
+    await prisma.agent.update({
+      where: { id: created.agent.id },
+      data: { currentWikiId: wiki.id, currentProfileId: profile.id, understandingScore: 88 }
+    });
+
+    const result = await resetAgentPersonalInfo({ userId: created.user.id, agentId: created.agent.id });
+
+    expect(result.user.displayName).toBe('Jun');
+    expect(result.user.role).toBeNull();
+    expect(result.user.city).toBeNull();
+    expect(result.agent.currentProfileId).toBeNull();
+    expect(result.agent.currentWikiId).toBeNull();
+    expect(result.agent.understandingScore).toBe(5);
+    expect(result.preservedContact?.id).toBe(contactSource.id);
+    await expect(prisma.sourceDocument.findMany({ where: { agentId: created.agent.id } })).resolves.toMatchObject([
+      { id: contactSource.id, rawText: '联系方式：wx_jun7' }
+    ]);
+    await expect(prisma.profileFact.count({ where: { agentId: created.agent.id } })).resolves.toBe(0);
+    await expect(prisma.profileProject.count({ where: { agentId: created.agent.id } })).resolves.toBe(0);
+    await expect(prisma.profileWiki.count({ where: { agentId: created.agent.id } })).resolves.toBe(0);
+    await expect(prisma.agentProfile.count({ where: { agentId: created.agent.id } })).resolves.toBe(0);
   });
 });

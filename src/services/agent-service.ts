@@ -81,3 +81,91 @@ export async function getCurrentUserSession(userId: string) {
 
   return { user, agent, profile };
 }
+
+function parseContactHandle(rawText?: string | null) {
+  const text = rawText?.trim();
+  if (!text) return '';
+
+  return text.replace(/^联系方式[:：]\s*/, '').trim();
+}
+
+export async function resetAgentPersonalInfo(input: { userId: string; agentId: string }) {
+  return prisma.$transaction(async (tx) => {
+    const agent = await tx.agent.findFirst({
+      where: {
+        id: input.agentId,
+        userId: input.userId
+      },
+      include: {
+        user: true
+      }
+    });
+
+    if (!agent) {
+      throw new Error('Agent not found for user');
+    }
+
+    const preservedContact = await tx.sourceDocument.findFirst({
+      where: {
+        userId: input.userId,
+        agentId: input.agentId,
+        sourceType: 'contact'
+      },
+      orderBy: { createdAt: 'asc' }
+    });
+
+    await tx.agent.update({
+      where: { id: input.agentId },
+      data: {
+        currentWikiId: null,
+        currentProfileId: null,
+        understandingScore: 5
+      }
+    });
+
+    await tx.recommendationCandidate.deleteMany({
+      where: {
+        OR: [{ userId: input.userId }, { targetUserId: input.userId }]
+      }
+    });
+    await tx.connectionRequest.deleteMany({
+      where: {
+        OR: [{ fromUserId: input.userId }, { toUserId: input.userId }]
+      }
+    });
+    await tx.cardVisit.deleteMany({
+      where: {
+        profile: { agentId: input.agentId }
+      }
+    });
+    await tx.agentProfile.deleteMany({ where: { agentId: input.agentId } });
+    await tx.profileWiki.deleteMany({ where: { agentId: input.agentId } });
+    await tx.profileProject.deleteMany({ where: { agentId: input.agentId } });
+    await tx.profileFact.deleteMany({ where: { agentId: input.agentId } });
+    await tx.sourceDocument.deleteMany({
+      where: {
+        agentId: input.agentId,
+        NOT: { sourceType: 'contact' }
+      }
+    });
+
+    const [user, resetAgent] = await Promise.all([
+      tx.user.update({
+        where: { id: input.userId },
+        data: {
+          role: null,
+          city: null,
+          avatarUrl: null
+        }
+      }),
+      tx.agent.findUniqueOrThrow({ where: { id: input.agentId } })
+    ]);
+
+    return {
+      user,
+      agent: resetAgent,
+      preservedContact,
+      contact: parseContactHandle(preservedContact?.rawText)
+    };
+  });
+}

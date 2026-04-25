@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { POST } from '@/app/api/agents/route';
 import { POST as generateProfilePOST } from '@/app/api/agents/generate-profile/route';
+import { DELETE as resetPersonalInfoDELETE } from '@/app/api/agents/[agentId]/personal-info/route';
 import { prisma } from '@/lib/db';
+import { generateAgentProfile } from '@/services/agent-generation-service';
+import { mockAiClient } from '@/services/ai/mock-ai-client';
 
 vi.mock('@/services/ai/default-ai-client', () => ({
   defaultAiClient: {
@@ -95,5 +98,24 @@ describe('POST /api/agents', () => {
     }));
 
     expect(response.status).toBe(400);
+  });
+
+  it('resets generated personal info while keeping nickname and contact', async () => {
+    const generated = await generateAgentProfile({ displayName: 'Jun', contact: 'wx_jun7', text: '我在做 AI 社交名片。' }, mockAiClient);
+
+    const response = await resetPersonalInfoDELETE(
+      new Request(`http://localhost/api/agents/${generated.agent.id}/personal-info`, {
+        method: 'DELETE',
+        body: JSON.stringify({ userId: generated.user.id })
+      }),
+      { params: Promise.resolve({ agentId: generated.agent.id }) }
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data.user.displayName).toBe('Jun');
+    expect(body.data.contact).toBe('wx_jun7');
+    await expect(prisma.agentProfile.count({ where: { agentId: generated.agent.id } })).resolves.toBe(0);
+    await expect(prisma.sourceDocument.count({ where: { agentId: generated.agent.id, sourceType: 'contact' } })).resolves.toBe(1);
   });
 });

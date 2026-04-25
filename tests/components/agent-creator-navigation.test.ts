@@ -8,7 +8,8 @@ describe('AgentCreator navigation copy', () => {
   it('uses product navigation labels instead of generation copy after setup', () => {
     expect(componentSource).toContain('<span>进化</span>');
     expect(componentSource).toContain('<span>我的Agent</span>');
-    expect(componentSource).toContain('<Header title="我的Agent" action="⋯" />');
+    expect(componentSource).toContain('title="我的Agent"');
+    expect(componentSource).toContain('aria-label="展开资料操作"');
     expect(componentSource).toContain('<span>发现</span>');
     expect(componentSource).not.toContain('<span>生成</span>');
     expect(componentSource).not.toContain('<span>分身</span>');

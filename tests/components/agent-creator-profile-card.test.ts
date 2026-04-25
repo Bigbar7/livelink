@@ -29,7 +29,8 @@ describe('AgentCreator profile card template', () => {
     expect(componentSource).toContain('profile-actions');
     expect(componentSource).toContain('profile-handle');
     expect(componentSource).toContain('联系分身');
-    expect(componentSource).not.toContain('联系方式');
+    expect(componentSource).not.toContain('SummaryRow title="联系方式"');
+    expect(componentSource).not.toContain('<b>联系方式</b>');
     expect(componentSource).toContain('这是你的数字分身');
   });
 
@@ -54,5 +55,13 @@ describe('AgentCreator profile card template', () => {
     expect(componentSource).toContain('analysis.domainSignals');
     expect(componentSource).toContain('analysis.persona');
     expect(componentSource).toContain('analysis.needs');
+  });
+
+  it('expands the profile top-right action into a reset menu that preserves nickname and contact', () => {
+    expect(componentSource).toContain('showProfileMenu');
+    expect(componentSource).toContain('resetPersonalInfo');
+    expect(componentSource).toContain('/personal-info');
+    expect(componentSource).toContain('清空资料');
+    expect(componentSource).toContain('保留昵称和联系方式');
   });
 });

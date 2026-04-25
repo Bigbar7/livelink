@@ -59,6 +59,12 @@ type CurrentSessionResponse = {
   profile: AgentProfile | null;
 } | null;
 
+type ResetPersonalInfoResponse = {
+  user: { id: string; displayName: string };
+  agent: { id: string; name: string };
+  contact: string;
+};
+
 type ParsedDocumentResponse = {
   fileName: string;
   fileType: string;
@@ -266,6 +272,8 @@ export function AgentCreator() {
   const [connectionFeedback, setConnectionFeedback] = useState('');
   const [findQuery, setFindQuery] = useState('');
   const [error, setError] = useState('');
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [isResettingPersonalInfo, setIsResettingPersonalInfo] = useState(false);
   const [isBooting, setIsBooting] = useState(true);
   const evolutionThreadEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -597,6 +605,51 @@ export function AgentCreator() {
     void navigator.clipboard?.writeText(profileLine);
   };
 
+  const resetPersonalInfo = async () => {
+    if (!generated || isResettingPersonalInfo) return;
+
+    const confirmed = window.confirm('确认清空个人资料？会保留昵称和联系方式，删除已生成名片、素材、分析和匹配记录。');
+    if (!confirmed) return;
+
+    setError('');
+    setIsResettingPersonalInfo(true);
+
+    try {
+      const data = await readApi<ResetPersonalInfoResponse>(`/api/agents/${generated.agent.id}/personal-info`, {
+        method: 'DELETE',
+        body: JSON.stringify({ userId: generated.user.id })
+      });
+
+      setNickname(data.user.displayName);
+      if (data.contact) setContact(data.contact);
+      setGenerated(null);
+      setPasteText('');
+      setFileName('');
+      setFileText('');
+      setFileParsingStatus('');
+      setLinkText('');
+      setChatDraft('');
+      setCreationConversation([{ role: 'assistant', content: '如果你不知道怎么写，我可以问你几个问题，再整理成生成资料。' }]);
+      setEvolutionDraft('');
+      setEvolutionFileName('');
+      setEvolutionFileText('');
+      setEvolutionFileStatus('');
+      setEvolutionConversation([]);
+      setRecommendations([]);
+      setSelectedCandidate(null);
+      setRecordedConnectionIds([]);
+      setConnectionFeedback('');
+      setFindQuery('');
+      setResidentProfiles((profiles) => profiles.filter((item) => item.agentId !== generated.agent.id));
+      setShowProfileMenu(false);
+      setStep('input');
+    } catch (resetError) {
+      setError(resetError instanceof Error ? resetError.message : '清空资料失败');
+    } finally {
+      setIsResettingPersonalInfo(false);
+    }
+  };
+
   return (
     <main className={`app-shell step-${step}`}>
       <div className="phone">
@@ -872,7 +925,28 @@ export function AgentCreator() {
 
           {step === 'card' && profile && (
             <section className="card-screen">
-              <Header title="我的Agent" action="⋯" />
+              <Header
+                title="我的Agent"
+                action={
+                  <button
+                    className="round-icon profile-menu-trigger"
+                    type="button"
+                    aria-label="展开资料操作"
+                    aria-expanded={showProfileMenu}
+                    onClick={() => setShowProfileMenu((visible) => !visible)}
+                  >
+                    ⋯
+                  </button>
+                }
+              />
+              {showProfileMenu && (
+                <div className="profile-menu" role="menu">
+                  <button type="button" role="menuitem" onClick={resetPersonalInfo} disabled={isResettingPersonalInfo}>
+                    <b>{isResettingPersonalInfo ? '正在清空' : '清空资料'}</b>
+                    <span>保留昵称和联系方式</span>
+                  </button>
+                </div>
+              )}
               <div className="content">
                 <div className="agent-card profile-card">
                   <div className="profile-identity">
@@ -1243,11 +1317,11 @@ function buildIcebreaker(nickname: string, candidate: CandidateView, offers: str
   return `你好${candidate.name}，我是 ${displayName}。我刚在 Livelink 生成了自己的 Agent 名片，看到你在 ${candidate.tags[0] ?? candidate.role} 方向有相关经验，感觉我们可以聊聊「${candidate.topic}」。我这边能提供 ${offers.slice(0, 2).join('、') || '产品和 AI 应用落地经验'}，这是我的 Agent 名片：livelink.app/u/${displayName}-agent`;
 }
 
-function Header({ title, action }: { title: string; action: string }) {
+function Header({ title, action }: { title: string; action: ReactNode }) {
   return (
     <div className="topbar">
       <span className="brand">{title}</span>
-      <span className="round-icon">{action}</span>
+      {typeof action === 'string' ? <span className="round-icon">{action}</span> : action}
     </div>
   );
 }

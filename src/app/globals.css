@@ -113,6 +113,56 @@ button {
   font-weight: 1000;
 }
 
+button.round-icon {
+  padding: 0;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.profile-menu {
+  position: absolute;
+  z-index: 4;
+  top: 52px;
+  right: 18px;
+  width: 176px;
+  padding: 8px;
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  background: #fff8e7;
+  box-shadow: 4px 4px 0 var(--line);
+}
+
+.profile-menu button {
+  width: 100%;
+  padding: 10px;
+  display: grid;
+  gap: 3px;
+  border: 0;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+
+.profile-menu button:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
+.profile-menu b {
+  font-size: 13px;
+  font-weight: 1000;
+}
+
+.profile-menu span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
 .content {
   flex: 1 1 auto;
   min-height: 0;
