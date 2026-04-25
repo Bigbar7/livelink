@@ -1,5 +1,5 @@
 import type { ExtractedKnowledge } from '@/types/domain';
-import type { AiClient } from './ai-client';
+import type { AiClient, GeneratedProfileCard } from './ai-client';
 
 type ChatMessage = {
   role: 'system' | 'user';
@@ -205,17 +205,22 @@ export const openAiCompatibleClient: AiClient = {
     ]);
   },
 
+  async generateProfileDraft(input) {
+    return completeJson<ExtractedKnowledge & { card: GeneratedProfileCard }>([
+      {
+        role: 'system',
+        content:
+          '你是 Livelink 的个人 Agent 生成器。只基于用户材料，不夸大、不编造。一次性完成事实抽取、项目抽取和价值社交名片生成。返回 JSON：{"facts":[{"factType":"identity|skill|experience|project|topic|offer|want|achievement|link","title":"...","summary":"...","evidenceText":"...","confidence":0.8}],"projects":[{"name":"...","role":"...","summary":"...","techStack":["..."],"links":["..."]}],"card":{"headline":"...","bio":"...","tags":["..."],"skills":["..."],"interests":["..."],"offers":["..."],"wants":["..."],"icebreakers":["..."]}}。card 要真实、有高级感、适合破冰社交；facts/projects 要保留可用于后续匹配的结构化信息。'
+      },
+      {
+        role: 'user',
+        content: `标题：${input.title ?? '用户资料'}\n\n材料：\n${input.text}`
+      }
+    ]);
+  },
+
   async generateCard(input) {
-    return completeJson<{
-      headline: string;
-      bio: string;
-      tags: string[];
-      skills: string[];
-      interests: string[];
-      offers: string[];
-      wants: string[];
-      icebreakers: string[];
-    }>([
+    return completeJson<GeneratedProfileCard>([
       {
         role: 'system',
         content:

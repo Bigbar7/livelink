@@ -789,6 +789,193 @@ mark {
   color: var(--ink);
 }
 
+.generation-content {
+  padding-bottom: 96px;
+  background:
+    radial-gradient(circle at 50% 18%, rgb(217 255 85 / 16%), transparent 164px),
+    radial-gradient(circle at 84% 40%, rgb(167 201 255 / 14%), transparent 144px),
+    var(--ink);
+}
+
+.generation-hero {
+  position: relative;
+  overflow: hidden;
+  margin-top: 8px;
+  padding: 16px;
+  border: 2px solid rgb(255 248 231 / 22%);
+  border-radius: 30px;
+  background: linear-gradient(145deg, rgb(255 250 240 / 12%), rgb(255 250 240 / 4%));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 18%), 0 18px 50px rgb(0 0 0 / 22%);
+}
+
+.generation-orbit {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  display: grid;
+  place-items: center;
+  margin: 4px auto 18px;
+  border: 2px dashed rgb(255 248 231 / 35%);
+  border-radius: 50%;
+  animation: orbit-spin 8s linear infinite;
+}
+
+.generation-orbit span {
+  width: 68px;
+  height: 68px;
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--line);
+  border-radius: 24px;
+  background: var(--lime);
+  color: var(--ink);
+  box-shadow: 6px 6px 0 rgb(0 0 0 / 65%);
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-size: 28px;
+  font-weight: 1000;
+  animation: orbit-counter-spin 8s linear infinite;
+}
+
+.generation-orbit i {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  background: var(--peach);
+}
+
+.generation-orbit i:nth-of-type(1) {
+  top: 8px;
+  left: 28px;
+}
+
+.generation-orbit i:nth-of-type(2) {
+  right: 6px;
+  top: 58px;
+  background: var(--blue);
+}
+
+.generation-orbit i:nth-of-type(3) {
+  left: 36px;
+  bottom: 4px;
+  background: var(--mint);
+}
+
+.generation-kicker {
+  width: fit-content;
+  margin: 0 0 10px;
+  padding: 7px 10px;
+  border: 2px solid rgb(255 248 231 / 26%);
+  border-radius: 999px;
+  background: rgb(217 255 85 / 14%);
+  color: var(--lime);
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-size: 11px;
+  font-weight: 1000;
+}
+
+.generation-progress {
+  overflow: hidden;
+  height: 12px;
+  margin: 18px 2px 16px;
+  border: 2px solid rgb(255 248 231 / 22%);
+  border-radius: 999px;
+  background: rgb(255 248 231 / 10%);
+}
+
+.generation-progress span {
+  display: block;
+  width: 46%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--lime), var(--blue), var(--peach));
+  box-shadow: 0 0 18px rgb(217 255 85 / 45%);
+  animation: progress-sweep 2.2s ease-in-out infinite;
+}
+
+.generation-steps {
+  display: grid;
+  gap: 10px;
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+}
+
+.generation-step {
+  position: relative;
+  padding: 13px 14px 13px 46px;
+  border: 2px solid rgb(255 248 231 / 16%);
+  border-radius: 20px;
+  background: rgb(255 250 240 / 8%);
+  color: #fff8e7;
+}
+
+.generation-step::before {
+  content: "";
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgb(255 248 231 / 35%);
+  border-radius: 50%;
+  background: rgb(255 248 231 / 12%);
+}
+
+.generation-step.active {
+  border-color: rgb(217 255 85 / 72%);
+  background: rgb(217 255 85 / 12%);
+}
+
+.generation-step.active::before {
+  border-color: var(--line);
+  background: var(--lime);
+  box-shadow: 0 0 0 6px rgb(217 255 85 / 15%);
+  animation: pulse 1.35s ease-in-out infinite;
+}
+
+.generation-step b,
+.generation-step span {
+  display: block;
+}
+
+.generation-step b {
+  margin-bottom: 5px;
+  font-size: 13px;
+}
+
+.generation-step span {
+  color: #d8ceb6;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.generation-tip {
+  background: #fff8e7;
+}
+
+@keyframes orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes orbit-counter-spin {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes progress-sweep {
+  0% {
+    transform: translateX(-110%);
+  }
+
+  55%,
+  100% {
+    transform: translateX(230%);
+  }
+}
+
 .toast {
   position: absolute;
   left: 18px;

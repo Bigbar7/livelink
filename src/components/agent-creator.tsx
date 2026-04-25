@@ -387,22 +387,45 @@ export function AgentCreator() {
           )}
 
           {step === 'generating' && (
-            <section className="generating-screen">
+            <section className="generating-screen" aria-live="polite">
               <Header title="Building Agent" action="◎" />
-              <div className="content">
-                <h2 className="page-title">
-                  正在生成
-                  <br />
-                  <mark>{nickname || '你'} 的 Agent</mark>
-                </h2>
-                <p className="muted light">后端正在保存资料、抽取知识、生成 Wiki 和 Agent 名片。</p>
-                <div className="build-card">
-                  <SummaryRow title="01 保存资料">写入 User、Agent 和 SourceDocument</SummaryRow>
-                  <SummaryRow title="02 信息抽取">生成 ProfileFact 和 ProfileProject</SummaryRow>
-                  <SummaryRow title="03 发布名片">生成并发布 AgentProfile</SummaryRow>
+              <div className="content generation-content">
+                <div className="generation-hero">
+                  <div className="generation-orbit" aria-hidden="true">
+                    <span>{firstLetter(nickname)}</span>
+                    <i />
+                    <i />
+                    <i />
+                  </div>
+                  <p className="generation-kicker">不是卡住了，我们正在认真整理</p>
+                  <h2 className="page-title">
+                    正在搭建
+                    <br />
+                    <mark>{nickname || '你'} 的 Agent</mark>
+                  </h2>
+                  <p className="muted light">
+                    预计 10-30 秒。我们会把你的资料整理成能力标签、合作需求和可以直接分享的数字名片。
+                  </p>
+                </div>
+                <div className="generation-progress" aria-hidden="true">
+                  <span />
+                </div>
+                <div className="generation-steps">
+                  <div className="generation-step active">
+                    <b>01 理解资料</b>
+                    <span>保存输入内容，提取你的经历、能力和关键词</span>
+                  </div>
+                  <div className="generation-step">
+                    <b>02 组织价值</b>
+                    <span>生成 ProfileFact、项目脉络和可提供资源</span>
+                  </div>
+                  <div className="generation-step">
+                    <b>03 发布名片</b>
+                    <span>写入 AgentProfile，并准备后续推荐匹配</span>
+                  </div>
                 </div>
               </div>
-              <div className="toast">真实后端生成中，请稍候。</div>
+              <div className="toast generation-tip">你可以先想想第一位想认识的人，Agent 完成后就能帮你找连接点。</div>
             </section>
           )}
 

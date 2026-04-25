@@ -1,9 +1,9 @@
 import type { AiClient } from '@/services/ai/ai-client';
 import { createAgent } from '@/services/agent-service';
-import { generateCardFromWiki, publishCard } from '@/services/card-service';
+import { generatePublishedCardFromKnowledge, publishGeneratedCard } from '@/services/card-service';
 import { confirmAgentKnowledge, extractKnowledgeFromSource } from '@/services/knowledge-service';
 import { addSourceDocument } from '@/services/source-service';
-import { generateWiki } from '@/services/wiki-service';
+import { prisma } from '@/lib/db';
 
 type LinkInput = {
   url: string;
@@ -26,6 +26,61 @@ function inferSourceType(url: string) {
   if (url.includes('xiaohongshu.com')) return 'xiaohongshu';
   if (url.includes('bilibili.com')) return 'article';
   return 'other';
+}
+
+function sourceText(source: Awaited<ReturnType<typeof addSourceDocument>>) {
+  return [`标题：${source.title ?? '用户资料'}`, source.rawText, source.userNote].filter(Boolean).join('\n\n');
+}
+
+async function persistExtractedKnowledge(
+  source: Awaited<ReturnType<typeof addSourceDocument>>,
+  extracted: Awaited<ReturnType<NonNullable<AiClient['generateProfileDraft']>>>
+) {
+  return prisma.$transaction(async (tx) => {
+    const facts = await Promise.all(
+      extracted.facts.map((fact) =>
+        tx.profileFact.create({
+          data: {
+            userId: source.userId,
+            agentId: source.agentId,
+            sourceDocumentId: source.id,
+            factType: fact.factType,
+            title: fact.title,
+            summary: fact.summary,
+            evidenceText: fact.evidenceText,
+            sourceUrl: source.url,
+            confidence: fact.confidence,
+            status: 'confirmed'
+          }
+        })
+      )
+    );
+
+    const projects = await Promise.all(
+      extracted.projects.map((project) =>
+        tx.profileProject.create({
+          data: {
+            userId: source.userId,
+            agentId: source.agentId,
+            name: project.name,
+            role: project.role,
+            summary: project.summary,
+            techStackJson: JSON.stringify(project.techStack),
+            linksJson: JSON.stringify(project.links),
+            sourceDocumentIds: JSON.stringify([source.id]),
+            status: 'confirmed'
+          }
+        })
+      )
+    );
+
+    await tx.sourceDocument.update({
+      where: { id: source.id },
+      data: { extractionStatus: 'extracted' }
+    });
+
+    return { facts, projects };
+  });
 }
 
 export async function generateAgentProfile(input: GenerateAgentProfileInput, aiClient: AiClient) {
@@ -91,22 +146,38 @@ export async function generateAgentProfile(input: GenerateAgentProfileInput, aiC
     );
   }
 
+  if (aiClient.generateProfileDraft) {
+    const primarySource = sources[0];
+    const sourcePayload = sources.map(sourceText).join('\n\n---\n\n');
+    const draft = await aiClient.generateProfileDraft({
+      title: primarySource.title ?? undefined,
+      text: sourcePayload
+    });
+    const extracted = [await persistExtractedKnowledge(primarySource, draft)];
+    const profile = await publishGeneratedCard(agent.id, draft.card);
+
+    return {
+      user,
+      agent,
+      sources,
+      extracted,
+      profile
+    };
+  }
+
   const extracted = [];
   for (const source of sources) {
     extracted.push(await extractKnowledgeFromSource(source.id, aiClient));
   }
 
   await confirmAgentKnowledge(agent.id);
-  const wiki = await generateWiki(agent.id, aiClient);
-  const draftCard = await generateCardFromWiki(wiki.id, aiClient);
-  const profile = await publishCard(draftCard.id);
+  const profile = await generatePublishedCardFromKnowledge(agent.id, aiClient);
 
   return {
     user,
     agent,
     sources,
     extracted,
-    wiki,
     profile
   };
 }
