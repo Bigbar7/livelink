@@ -5,6 +5,7 @@ import { ChangeEvent, DragEvent, ReactNode, TouchEvent, useMemo, useRef, useStat
 type FlowStep = 'home' | 'input' | 'generating' | 'card' | 'edit' | 'share' | 'find' | 'searching' | 'matches' | 'candidate' | 'icebreaker';
 type InputMode = 'text' | 'file' | 'link' | 'chat';
 type EditTab = 'basic' | 'profile' | 'goals';
+type DiscoveryMode = 'all' | 'search' | 'fallback';
 
 type ApiResponse<T> = {
   ok: boolean;
@@ -313,6 +314,28 @@ function profileToCandidate(item: RecommendationItem): CandidateView {
   };
 }
 
+function profileToResidentCandidate(profile: AgentProfile): CandidateView {
+  const tags = parseJsonList(profile.tagsJson);
+  const offers = parseJsonList(profile.offersJson);
+  const wants = parseJsonList(profile.wantsJson);
+  const icebreakers = parseJsonList(profile.icebreakersJson);
+  const name = profileDisplayName(profile);
+
+  return {
+    id: profile.id,
+    userId: profile.userId,
+    name,
+    role: profile.headline,
+    avatar: firstLetter(name),
+    tags,
+    score: 0,
+    reason: profile.bio || '这个用户已经生成并发布了自己的 Livelink Agent。',
+    offer: offers.join('、') || profile.bio || '资料还在补充中',
+    topic: icebreakers[0] || wants[0] || '从对方的公开名片开始聊起',
+    contactHandle: ''
+  };
+}
+
 async function readApi<T>(url: string, init?: RequestInit) {
   const isFormData = init?.body instanceof FormData;
   const response = await fetch(url, {
@@ -367,6 +390,7 @@ export function AgentCreator() {
   const [generated, setGenerated] = useState<GeneratedAgentResponse | null>(null);
   const [residentProfiles, setResidentProfiles] = useState<AgentProfile[]>([]);
   const [recommendations, setRecommendations] = useState<CandidateView[]>([]);
+  const [discoveryMode, setDiscoveryMode] = useState<DiscoveryMode>('all');
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateView | null>(null);
   const [recordedConnectionIds, setRecordedConnectionIds] = useState<string[]>([]);
   const [connectionFeedback, setConnectionFeedback] = useState('');
@@ -459,10 +483,12 @@ export function AgentCreator() {
         submit: '生成我的分身'
       };
   const showBottomNav = hasGenerated && step !== 'home' && step !== 'generating' && step !== 'searching' && step !== 'edit';
+  const discoveryCandidates = useMemo(() => residentProfiles.map(profileToResidentCandidate), [residentProfiles]);
+  const discoveryList = recommendations.length > 0 ? recommendations : discoveryCandidates;
   const isSelectedConnectionRecorded = Boolean(selectedCandidate && recordedConnectionIds.includes(selectedCandidate.id));
-  const selectedCandidateIndex = selectedCandidate ? recommendations.findIndex((candidate) => candidate.id === selectedCandidate.id) : -1;
-  const nextCandidate = selectedCandidateIndex >= 0 ? recommendations[selectedCandidateIndex + 1] : undefined;
-  const hasCandidateBrowsing = recommendations.length > 1;
+  const selectedCandidateIndex = selectedCandidate ? discoveryList.findIndex((candidate) => candidate.id === selectedCandidate.id) : -1;
+  const nextCandidate = selectedCandidateIndex >= 0 ? discoveryList[selectedCandidateIndex + 1] : undefined;
+  const hasCandidateBrowsing = discoveryList.length > 1;
   const selectedCandidateIsInternet = Boolean(selectedCandidate && isInternetCandidate(selectedCandidate));
   const creationSubmitText = mode === 'chat' && creationChatState?.readiness === 'ready' ? '资料已足够，生成第一版' : agentInputCopy.submit;
   const activeText = useMemo(() => {
@@ -485,7 +511,7 @@ export function AgentCreator() {
 
     Promise.allSettled([
       readApi<CurrentSessionResponse>('/api/me'),
-      readApi<AgentProfile[]>('/api/profiles?limit=12')
+      readApi<AgentProfile[]>('/api/profiles?limit=100')
     ]).then(([sessionResult, profilesResult]) => {
       if (profilesResult.status === 'fulfilled') {
         setResidentProfiles(profilesResult.value);
@@ -729,6 +755,12 @@ export function AgentCreator() {
     const activeFindQuery = nextFindQuery ?? findQuery;
     const discoveryInterests = [...profileNeeds, ...activeFindQuery.split(/[，,\s]+/)].map((item) => item.trim()).filter(Boolean);
     const interests = Array.from(new Set(discoveryInterests)).slice(0, 8);
+    if (interests.length === 0) {
+      setRecommendations([]);
+      setDiscoveryMode('all');
+      setStep('find');
+      return;
+    }
     const search = new URLSearchParams({ userId: generated.user.id });
     interests.forEach((interest) => search.append('interest', interest));
 
@@ -737,11 +769,12 @@ export function AgentCreator() {
     try {
       const data = await readApi<RecommendationItem[]>(`/api/recommendations?${search.toString()}`);
       const candidates = data.map(profileToCandidate);
-      const webCandidates = buildInternetCandidates(profileNeeds, activeFindQuery);
+      const webCandidates = candidates.length > 0 ? buildInternetCandidates(profileNeeds, activeFindQuery) : [];
       setRecommendations([...candidates, ...webCandidates]);
-      if (candidates[0] ?? webCandidates[0]) setSelectedCandidate(candidates[0] ?? webCandidates[0]);
+      setDiscoveryMode(candidates.length > 0 ? 'search' : 'fallback');
+      if (candidates[0] ?? webCandidates[0] ?? discoveryCandidates[0]) setSelectedCandidate(candidates[0] ?? webCandidates[0] ?? discoveryCandidates[0]);
       setConnectionFeedback('');
-      setStep('matches');
+      setStep('find');
     } catch (recommendationError) {
       setError(recommendationError instanceof Error ? recommendationError.message : '推荐失败');
       setStep('find');
@@ -749,29 +782,22 @@ export function AgentCreator() {
   };
 
   const openDiscovery = () => {
-    if (recommendations.length > 0) {
-      setStep('matches');
-      return;
+    if (!findQuery.trim() && profileNeeds.length > 0) {
+      setFindQuery(profileNeeds.join('\n'));
     }
-
-    if (profileNeeds.length > 0) {
-      const profileNeedsQuery = profileNeeds.join('\n');
-      setFindQuery(profileNeedsQuery);
-      void findPeople(profileNeedsQuery);
-      return;
-    }
-
     setStep('find');
   };
 
   const restartDiscovery = () => {
     setFindQuery(profileNeeds.join('\n'));
+    setRecommendations([]);
+    setDiscoveryMode('all');
     setStep('find');
   };
 
   const showNextCandidate = () => {
     if (!nextCandidate) {
-      setStep('matches');
+      setStep('find');
       return;
     }
 
@@ -1704,26 +1730,83 @@ export function AgentCreator() {
 
           {step === 'find' && (
             <section className="find-screen">
-              <Header title="Find People" action="⌕" />
+              <Header
+                title="Find People"
+                action={
+                  <button className="round-icon" type="button" aria-label="重新搜索" title="重新搜索" onClick={restartDiscovery}>
+                    ↻
+                  </button>
+                }
+              />
               <div className="content">
                 <h2 className="page-title">
-                  你想
+                  发现
                   <br />
-                  <mark>认识谁</mark>
+                  <mark>已入驻的人</mark>
                 </h2>
+                <p className="muted">
+                  {discoveryMode === 'search'
+                    ? '这些人按你的需求匹配排序，互联网公开信息候选人会放在后面作为邀请补充。'
+                    : discoveryMode === 'fallback'
+                      ? '没有精确匹配，先看看这些已入驻的人。'
+                      : '默认按资料完整度排序，信息越完整越靠前。'}
+                </p>
                 {error && <p className="error-text">{error}</p>}
-                <label className="query-box">
-                  <span>我的需求</span>
-                  <textarea
-                    value={findQuery}
-                    onChange={(event) => setFindQuery(event.target.value)}
-                    placeholder={findPromptTemplate}
-                  />
-                </label>
-                <div className="sticky-actions">
+                <div className="discovery-search-panel">
+                  <label className="query-box">
+                    <span>按需求搜索</span>
+                    <textarea
+                      value={findQuery}
+                      onChange={(event) => setFindQuery(event.target.value)}
+                      placeholder={findPromptTemplate}
+                    />
+                  </label>
                   <button className="primary-action lime" onClick={() => findPeople()}>
-                    生成推荐列表
+                    搜索匹配的人
                   </button>
+                </div>
+                <div className="discovery-list-header">
+                  <b>{discoveryMode === 'search' ? '搜索结果' : '已经入驻的人'}</b>
+                  <span>{discoveryList.length} 人</span>
+                </div>
+                <div className="candidate-list discovery-candidate-list">
+                  {discoveryList.length === 0 ? (
+                    <div className="resident-empty">暂无已发布名片，生成后会出现在这里。</div>
+                  ) : (
+                    discoveryList.map((candidate) => {
+                      const isWebCandidate = isInternetCandidate(candidate);
+
+                      return (
+                        <button
+                          className={`candidate-card ${isWebCandidate ? 'web-candidate-card' : ''}`}
+                          key={candidate.id}
+                          onClick={() => {
+                            setSelectedCandidate(candidate);
+                            setStep('candidate');
+                          }}
+                        >
+                          <span className="candidate-avatar">{candidate.avatar}</span>
+                          <span className="candidate-main">
+                            <b>{candidate.name}</b>
+                            <small>{candidate.role}</small>
+                            <em>{candidate.reason}</em>
+                            {isWebCandidate && <span className="candidate-web-notice">未入驻 Livelink，可邀请 TA 生成 Agent</span>}
+                          </span>
+                          <strong
+                            className={
+                              isWebCandidate
+                                ? 'invite-status-pill'
+                                : recordedConnectionIds.includes(candidate.id)
+                                  ? 'connection-status-pill'
+                                  : ''
+                            }
+                          >
+                            {isWebCandidate ? '可邀请' : recordedConnectionIds.includes(candidate.id) ? '已记录' : discoveryMode === 'search' ? `${candidate.score}%` : '已入驻'}
+                          </strong>
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             </section>
@@ -1856,7 +1939,7 @@ export function AgentCreator() {
                     type="button"
                     aria-label="返回推荐列表"
                     title="返回推荐列表"
-                    onClick={() => setStep('matches')}
+                    onClick={() => setStep('find')}
                   >
                     ←
                   </button>

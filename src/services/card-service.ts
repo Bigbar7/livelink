@@ -162,8 +162,43 @@ export async function getPublicProfile(slug: string) {
   });
 }
 
+function parseProfileList(value: string) {
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string' && item.trim().length > 0) : [];
+  } catch {
+    return [];
+  }
+}
+
+function profileCompletenessScore(profile: {
+  headline: string;
+  bio: string;
+  tagsJson: string;
+  skillsJson: string;
+  interestsJson: string;
+  offersJson: string;
+  wantsJson: string;
+  icebreakersJson: string;
+  analysisJson: string;
+}) {
+  const headlineScore = profile.headline.trim().length >= 8 ? 12 : profile.headline.trim() ? 6 : 0;
+  const bioScore = profile.bio.trim().length >= 24 ? 18 : profile.bio.trim() ? 8 : 0;
+  const listScores = [
+    parseProfileList(profile.tagsJson).length * 8,
+    parseProfileList(profile.skillsJson).length * 7,
+    parseProfileList(profile.interestsJson).length * 6,
+    parseProfileList(profile.offersJson).length * 8,
+    parseProfileList(profile.wantsJson).length * 8,
+    parseProfileList(profile.icebreakersJson).length * 5
+  ];
+  const analysisScore = profile.analysisJson && profile.analysisJson !== '{}' ? 10 : 0;
+
+  return Math.min(100, headlineScore + bioScore + listScores.reduce((sum, score) => sum + Math.min(score, 16), 0) + analysisScore);
+}
+
 export async function listPublishedProfiles(limit = 20) {
-  return prisma.agentProfile.findMany({
+  const profiles = await prisma.agentProfile.findMany({
     where: { status: 'published' },
     include: {
       user: {
@@ -171,6 +206,12 @@ export async function listPublishedProfiles(limit = 20) {
       }
     },
     orderBy: { updatedAt: 'desc' },
-    take: limit
+    take: Math.max(limit, 100)
   });
+
+  return profiles.sort((first, second) => {
+    const completenessDifference = profileCompletenessScore(second) - profileCompletenessScore(first);
+    if (completenessDifference !== 0) return completenessDifference;
+    return second.updatedAt.getTime() - first.updatedAt.getTime();
+  }).slice(0, limit);
 }

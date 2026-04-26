@@ -3031,6 +3031,36 @@ mark {
   line-height: 1.62;
 }
 
+.public-contact-copy {
+  display: grid;
+  gap: 10px;
+}
+
+.public-contact-copy p {
+  overflow-wrap: anywhere;
+}
+
+.public-contact-copy button {
+  min-height: 46px;
+  width: 100%;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--lime);
+  color: var(--ink);
+  box-shadow: 4px 4px 0 var(--line);
+  cursor: pointer;
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-size: 14px;
+  font-weight: 1000;
+}
+
+.public-contact-copy small {
+  color: #33603e;
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .public-highlight-list,
 .public-domain-list,
 .public-goals {
@@ -3156,10 +3186,55 @@ mark {
   opacity: 1;
 }
 
+.discovery-search-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px;
+  border: 2px solid var(--line);
+  border-radius: 24px;
+  background: #fff8e7;
+  box-shadow: 5px 5px 0 rgb(20 20 16 / 14%);
+}
+
+.discovery-search-panel .query-box {
+  margin-top: 0;
+  box-shadow: none;
+}
+
+.discovery-list-header {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+}
+
+.discovery-list-header b {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 1000;
+}
+
+.discovery-list-header span {
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--blue);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 1000;
+}
+
 .candidate-list {
   display: grid;
   gap: 12px;
   margin-top: 16px;
+}
+
+.discovery-candidate-list {
+  padding-bottom: 92px;
 }
 
 .matches-trace {

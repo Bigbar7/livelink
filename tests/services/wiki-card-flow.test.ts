@@ -4,7 +4,7 @@ import { createAgent } from '@/services/agent-service';
 import { addSourceDocument } from '@/services/source-service';
 import { confirmFact, extractKnowledgeFromSource } from '@/services/knowledge-service';
 import { generateWiki } from '@/services/wiki-service';
-import { generateCardFromWiki, getPublicProfile, publishCard } from '@/services/card-service';
+import { generateCardFromWiki, getPublicProfile, listPublishedProfiles, publishCard } from '@/services/card-service';
 import { mockAiClient } from '@/services/ai/mock-ai-client';
 import { manualGrowthInput } from '../fixtures/manual-input';
 
@@ -80,6 +80,46 @@ describe('wiki and card flow', () => {
     const publicProfile = await getPublicProfile(profile.slug);
 
     expect(publicProfile?.agent.sources[0]?.rawText).toBe('联系方式：wx_jun7');
+  });
+
+  it('lists published profiles by profile completeness before recency', async () => {
+    const complete = await createAgent({ displayName: 'Complete Agent' });
+    const sparse = await createAgent({ displayName: 'Sparse Agent' });
+
+    await prisma.agentProfile.create({
+      data: {
+        userId: complete.user.id,
+        agentId: complete.agent.id,
+        slug: 'complete-agent',
+        status: 'published',
+        headline: 'AI 社交产品 Builder',
+        bio: '正在做 AI 社交、推荐系统和 Agent 名片。',
+        tagsJson: JSON.stringify(['AI 社交', '推荐系统']),
+        skillsJson: JSON.stringify(['产品设计', '全栈开发']),
+        interestsJson: JSON.stringify(['Agent', '社区增长']),
+        offersJson: JSON.stringify(['产品原型', '技术落地']),
+        wantsJson: JSON.stringify(['增长伙伴', '设计伙伴']),
+        icebreakersJson: JSON.stringify(['聊聊 AI 社交如何冷启动'])
+      }
+    });
+    await prisma.agentProfile.create({
+      data: {
+        userId: sparse.user.id,
+        agentId: sparse.agent.id,
+        slug: 'sparse-agent',
+        status: 'published',
+        headline: 'AI Builder',
+        bio: '只填写了很少的信息。'
+      }
+    });
+    await prisma.agentProfile.update({
+      where: { slug: 'sparse-agent' },
+      data: { bio: '只填写了很少的信息，但更新时间更新。' }
+    });
+
+    const profiles = await listPublishedProfiles();
+
+    expect(profiles.map((profile) => profile.slug)).toEqual(['complete-agent', 'sparse-agent']);
   });
 
   it('generates wiki from confirmed knowledge only', async () => {

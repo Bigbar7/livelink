@@ -76,21 +76,22 @@ describe('AgentCreator navigation copy', () => {
 
   it('lets users return from a recommended candidate detail to the current recommendation list', () => {
     expect(componentSource).toContain('aria-label="返回推荐列表"');
-    expect(componentSource).toContain("setStep('matches')");
+    expect(componentSource).toContain("setStep('find')");
   });
 
-  it('returns discovery navigation to existing recommendation results after an icebreaker', () => {
+  it('opens discovery as the resident directory instead of auto-running recommendations', () => {
     expect(componentSource).toContain('const openDiscovery = () => {');
-    expect(componentSource).toContain('recommendations.length > 0');
     expect(componentSource).toContain('profileNeeds.length > 0');
-    expect(componentSource).toContain('void findPeople(profileNeedsQuery);');
+    expect(componentSource).toContain("setFindQuery(profileNeeds.join('\\n'))");
+    expect(componentSource).toContain("setStep('find');");
     expect(componentSource).toContain("<BottomNav currentStep={step} onNavigate={setStep} onFindNavigate={openDiscovery} />");
     expect(componentSource).toContain("onClick={onFindNavigate}");
   });
 
-  it('keeps a restart search entry on the recommendation results page', () => {
+  it('keeps a restart search entry on the discovery page', () => {
     expect(componentSource).toContain('const restartDiscovery = () => {');
     expect(componentSource).toContain("setFindQuery(profileNeeds.join('\\n'));");
+    expect(componentSource).toContain("setDiscoveryMode('all');");
     expect(componentSource).toContain('aria-label="重新搜索"');
     expect(componentSource).toContain('onClick={restartDiscovery}');
   });

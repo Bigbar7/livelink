@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { PublicContactCopy } from '@/components/public-contact-copy';
 import { getPublicProfile } from '@/services/card-service';
 
 type RouteContext = {
@@ -155,7 +156,7 @@ export default async function PublicProfilePage({ params }: RouteContext) {
         <article className="public-profile-panel" id="contact">
           <span>CONNECT</span>
           <h2>联系我</h2>
-          <p>{contactHandle ? `联系方式：${contactHandle}` : '联系方式暂未公开，可以先通过 Livelink 认识我。'}</p>
+          <PublicContactCopy contactHandle={contactHandle} />
           <div className="public-goals">
             <b>我能提供</b>
             <p>{offers.join('、') || '资料还在补充中'}</p>
