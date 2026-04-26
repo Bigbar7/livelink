@@ -2698,73 +2698,13 @@ mark {
   padding-block: 12px;
 }
 
-.share-link-card {
-  margin-bottom: 14px;
-  padding: 16px;
-  border: 2px solid #fff2cf;
-  border-radius: 22px;
-  background: #fffaf0;
-  color: var(--ink);
-  box-shadow: 7px 7px 0 rgb(255 248 231 / 18%);
-}
-
-.share-kicker {
-  display: block;
-  color: #6e6653;
-  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
-  font-size: 11px;
-  font-weight: 1000;
-  letter-spacing: 0;
-}
-
-.share-link-card h2 {
-  margin: 8px 0;
-  font-size: 28px;
-  line-height: 1.02;
-  letter-spacing: 0;
-}
-
-.share-link-card p {
-  margin: 0 0 12px;
-  color: #4d483d;
-  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.share-link-card code {
-  display: block;
-  width: 100%;
-  padding: 11px 12px;
-  overflow-x: auto;
-  border: 2px solid var(--line);
-  border-radius: 14px;
-  background: #171713;
-  color: var(--lime);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.share-link-card small {
-  display: block;
-  margin-top: 9px;
-  color: #33603e;
-  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.share-action-row {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-  margin-top: 12px;
-}
-
 .poster-card {
   position: relative;
-  min-height: 520px;
+  min-height: 560px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 24px;
   padding: 24px;
   overflow: hidden;
   border: 3px solid #fff2cf;
@@ -2774,6 +2714,15 @@ mark {
     #171713;
   color: #fff8e7;
   box-shadow: 0 22px 40px rgb(0 0 0 / 24%);
+}
+
+.share-feedback {
+  margin: 12px 0 0;
+  color: #d9ff55;
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
 }
 
 .poster-card::before {
@@ -2792,18 +2741,21 @@ mark {
   letter-spacing: -.04em;
 }
 
-.poster-card h2 {
+.poster-body,
+.poster-footer {
   position: relative;
   z-index: 1;
-  margin: 86px 0 12px;
-  font-size: 38px;
-  line-height: .95;
-  letter-spacing: -.07em;
+}
+
+.poster-card h2 {
+  margin: 52px 0 12px;
+  overflow-wrap: anywhere;
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: 0;
 }
 
 .poster-card p {
-  position: relative;
-  z-index: 1;
   margin: 0;
   color: #c9c0a7;
   font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
@@ -2812,9 +2764,8 @@ mark {
 }
 
 .poster-tags {
-  position: relative;
-  z-index: 1;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 18px;
 }
@@ -2828,6 +2779,99 @@ mark {
   font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
   font-size: 11px;
   font-weight: 1000;
+}
+
+.poster-footer {
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr);
+  gap: 14px 16px;
+  align-items: start;
+  box-sizing: border-box;
+  padding: 16px;
+  border: 1px solid rgb(255 248 231 / 24%);
+  border-radius: 20px;
+  background: rgb(255 248 231 / 6%);
+}
+
+.poster-qr {
+  width: 108px;
+  height: 108px;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 2px solid #fff8e7;
+  border-radius: 18px;
+  background: #fffaf0;
+}
+
+.poster-qr-grid {
+  width: 100%;
+  height: 100%;
+  display: grid;
+}
+
+.poster-qr-grid i {
+  background: #fffaf0;
+}
+
+.poster-qr-grid i.dark {
+  background: #171713;
+}
+
+.poster-scan-copy {
+  min-width: 0;
+  padding-top: 3px;
+}
+
+.poster-scan-copy small {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  border: 1px solid rgb(217 255 85 / 55%);
+  border-radius: 999px;
+  color: var(--lime);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  font-weight: 1000;
+  letter-spacing: 0;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.poster-scan-copy b {
+  display: block;
+  color: #fff8e7;
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-size: 21px;
+  line-height: 1.05;
+  font-weight: 1000;
+  white-space: nowrap;
+}
+
+.poster-scan-copy span {
+  display: block;
+  margin-top: 7px;
+  color: #c9c0a7;
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.poster-contact-line {
+  display: block;
+  grid-column: 1 / -1;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 2px;
+  padding: 10px 12px;
+  overflow-wrap: anywhere;
+  border-radius: 14px;
+  background: var(--lime);
+  color: var(--ink);
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-size: 13px;
+  line-height: 1.25;
+  font-weight: 1000;
+  text-align: center;
 }
 
 .public-profile-page {

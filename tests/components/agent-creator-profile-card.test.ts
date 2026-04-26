@@ -119,15 +119,37 @@ describe('AgentCreator profile card template', () => {
     expect(componentSource).not.toContain('id="edit-reset-confirm-title"');
   });
 
-  it('exposes a public share link for the digital clone without schema changes', () => {
+  it('opens a focused poster share page without the public-link card', () => {
     expect(componentSource).toContain('publicProfileUrl');
     expect(componentSource).toContain("`/u/${profile.slug}`");
-    expect(componentSource).toContain('copyPublicProfileLink');
-    expect(componentSource).toContain('复制公开链接');
-    expect(componentSource).toContain('打开公开页');
-    expect(componentSource).toContain("window.open(publicProfilePath, '_blank', 'noopener,noreferrer')");
     expect(componentSource).toContain("setStep('share')");
-    expect(styleSource).toContain('.share-link-card');
-    expect(styleSource).toContain('.share-action-row');
+    expect(componentSource).not.toContain('让别人直接链接到你');
+    expect(componentSource).not.toContain('share-link-card');
+    expect(componentSource).not.toContain('复制公开链接');
+    expect(componentSource).not.toContain('打开公开页');
+    expect(styleSource).not.toContain('.share-link-card');
+    expect(styleSource).not.toContain('.share-action-row');
+  });
+
+  it('renders a real QR poster that can be saved as an image', () => {
+    expect(componentSource).toContain("import { createQrMatrix, type QrMatrix } from '@/lib/qr';");
+    expect(componentSource).toContain('saveSharePoster');
+    expect(componentSource).toContain('drawQrMatrix');
+    expect(componentSource).toContain('canvas.toBlob');
+    expect(componentSource).toContain('download = `livelink-${profile.slug}.png`');
+    expect(componentSource).toContain('海报已生成，可以保存或转发。');
+    expect(componentSource).toContain('poster-qr');
+    expect(componentSource).toContain('SCAN TO CONNECT');
+    expect(componentSource).toContain('扫码认识我');
+    expect(componentSource).toContain('进入分身页，可一键复制联系方式');
+    expect(componentSource).toContain('poster-contact-line');
+    expect(componentSource).toContain('联系方式：{contactHandle}');
+    expect(componentSource).not.toContain('扫码查看我的分身');
+    expect(componentSource).not.toContain('<span>{publicProfileUrl}</span>');
+    expect(componentSource).not.toContain('drawWrappedText(context, publicProfileUrl');
+    expect(componentSource).not.toContain('<div className="qr-box">SCAN</div>');
+    expect(styleSource).toContain('.poster-body');
+    expect(styleSource).toContain('.poster-qr');
+    expect(styleSource).toContain('.poster-footer');
   });
 });

@@ -1,6 +1,7 @@
 'use client';
 
 import { ChangeEvent, DragEvent, ReactNode, TouchEvent, useMemo, useRef, useState, useEffect } from 'react';
+import { createQrMatrix, type QrMatrix } from '@/lib/qr';
 
 type FlowStep = 'home' | 'input' | 'generating' | 'card' | 'edit' | 'share' | 'find' | 'searching' | 'matches' | 'candidate' | 'icebreaker';
 type InputMode = 'text' | 'file' | 'link' | 'chat';
@@ -336,6 +337,77 @@ function profileToResidentCandidate(profile: AgentProfile): CandidateView {
   };
 }
 
+function drawWrappedText(
+  context: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  lineHeight: number,
+  maxLines: number
+) {
+  const characters = Array.from(text);
+  const lines: string[] = [];
+  let currentLine = '';
+
+  characters.forEach((character) => {
+    const nextLine = `${currentLine}${character}`;
+    if (context.measureText(nextLine).width > maxWidth && currentLine) {
+      lines.push(currentLine);
+      currentLine = character;
+    } else {
+      currentLine = nextLine;
+    }
+  });
+
+  if (currentLine) lines.push(currentLine);
+
+  lines.slice(0, maxLines).forEach((line, index) => {
+    const displayLine = index === maxLines - 1 && lines.length > maxLines ? `${line.slice(0, Math.max(0, line.length - 1))}...` : line;
+    context.fillText(displayLine, x, y + index * lineHeight);
+  });
+}
+
+function drawQrMatrix(context: CanvasRenderingContext2D, matrix: QrMatrix, x: number, y: number, size: number, dark = '#171713', light = '#fffaf0') {
+  const quietZone = 4;
+  const moduleSize = size / (matrix.size + quietZone * 2);
+
+  context.fillStyle = light;
+  context.fillRect(x, y, size, size);
+  context.fillStyle = dark;
+
+  matrix.modules.forEach((row, rowIndex) => {
+    row.forEach((isDark, colIndex) => {
+      if (!isDark) return;
+      context.fillRect(x + (colIndex + quietZone) * moduleSize, y + (rowIndex + quietZone) * moduleSize, Math.ceil(moduleSize), Math.ceil(moduleSize));
+    });
+  });
+}
+
+function fillRoundedRect(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
+  context.beginPath();
+  context.roundRect(x, y, width, height, radius);
+  context.fill();
+}
+
+function strokeRoundedRect(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
+  context.beginPath();
+  context.roundRect(x, y, width, height, radius);
+  context.stroke();
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement) {
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+      } else {
+        reject(new Error('Poster export failed'));
+      }
+    }, 'image/png');
+  });
+}
+
 async function readApi<T>(url: string, init?: RequestInit) {
   const isFormData = init?.body instanceof FormData;
   const response = await fetch(url, {
@@ -444,6 +516,14 @@ export function AgentCreator() {
   const contactHandle = contact.trim() || (nickname.trim() ? `@${nickname.trim()}` : `ID ${profile?.slug ?? 'agent'}`);
   const publicProfilePath = profile ? `/u/${profile.slug}` : '';
   const publicProfileUrl = publicProfilePath ? `${publicOrigin}${publicProfilePath}` : '';
+  const shareQrMatrix = useMemo(() => {
+    if (!publicOrigin || !publicProfileUrl) return null;
+    try {
+      return createQrMatrix(publicProfileUrl);
+    } catch {
+      return null;
+    }
+  }, [publicOrigin, publicProfileUrl]);
   const sparseProfileHint = '资料还不够，继续补充后再生成';
   const hasGenerated = Boolean(generated);
   const creationChatCompleteness = creationChatState ? `${creationChatState.filledSlots.length}/6` : '0/6';
@@ -979,10 +1059,98 @@ export function AgentCreator() {
     setStep('share');
   };
 
-  const copyPublicProfileLink = async () => {
-    if (!publicProfileUrl) return;
-    await navigator.clipboard?.writeText(publicProfileUrl);
-    setShareFeedback('公开链接已复制，可以直接发给别人。');
+  const saveSharePoster = async () => {
+    if (!profile || !publicProfileUrl || !shareQrMatrix) return;
+
+    setShareFeedback('正在生成海报...');
+
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1080;
+      canvas.height = 1600;
+      const context = canvas.getContext('2d');
+
+      if (!context) throw new Error('Canvas is unavailable');
+
+      context.fillStyle = '#171713';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = '#d9ff55';
+      context.fillRect(0, 0, canvas.width, 22);
+      context.strokeStyle = '#fff2cf';
+      context.lineWidth = 10;
+      context.strokeRect(54, 54, canvas.width - 108, canvas.height - 108);
+
+      context.fillStyle = '#fff8e7';
+      context.font = '900 34px "PingFang SC", "Hiragino Sans GB", sans-serif';
+      context.fillText('Livelink Agent', 92, 132);
+
+      context.font = '900 88px "PingFang SC", "Hiragino Sans GB", sans-serif';
+      drawWrappedText(context, nickname.trim() || '我的数字分身', 92, 330, 896, 94, 2);
+
+      context.fillStyle = '#d9ff55';
+      context.font = '900 52px "PingFang SC", "Hiragino Sans GB", sans-serif';
+      drawWrappedText(context, profile.headline, 92, 540, 896, 60, 2);
+
+      context.fillStyle = '#c9c0a7';
+      context.font = '400 34px "PingFang SC", "Hiragino Sans GB", sans-serif';
+      drawWrappedText(context, profile.bio, 92, 690, 896, 52, 4);
+
+      let tagX = 92;
+      tags.slice(0, 3).forEach((tag) => {
+        const width = Math.min(context.measureText(tag).width + 54, 300);
+        context.fillStyle = '#d9ff55';
+        context.fillRect(tagX, 930, width, 64);
+        context.fillStyle = '#171713';
+        context.font = '900 28px "PingFang SC", "Hiragino Sans GB", sans-serif';
+        context.fillText(tag, tagX + 27, 972);
+        tagX += width + 18;
+      });
+
+      context.fillStyle = 'rgba(255, 248, 231, 0.06)';
+      fillRoundedRect(context, 92, 1036, 896, 430, 42);
+      context.strokeStyle = 'rgba(255, 248, 231, 0.24)';
+      context.lineWidth = 3;
+      strokeRoundedRect(context, 92, 1036, 896, 430, 42);
+
+      drawQrMatrix(context, shareQrMatrix, 132, 1088, 286);
+      context.fillStyle = '#d9ff55';
+      context.font = '900 24px ui-monospace, SFMono-Regular, Menlo, monospace';
+      context.fillText('SCAN TO CONNECT', 462, 1138);
+      context.fillStyle = '#fff8e7';
+      context.font = '900 52px "PingFang SC", "Hiragino Sans GB", sans-serif';
+      context.fillText('扫码认识我', 462, 1216);
+      context.fillStyle = '#c9c0a7';
+      context.font = '400 30px "PingFang SC", "Hiragino Sans GB", sans-serif';
+      context.fillText('进入分身页，可一键复制联系方式', 462, 1280);
+      context.fillStyle = '#d9ff55';
+      fillRoundedRect(context, 132, 1362, 816, 72, 26);
+      context.fillStyle = '#171713';
+      context.font = '900 32px "PingFang SC", "Hiragino Sans GB", sans-serif';
+      drawWrappedText(context, `联系方式：${contactHandle}`, 172, 1408, 736, 36, 1);
+
+      const blob = await canvasToBlob(canvas);
+      const download = `livelink-${profile.slug}.png`;
+      const file = new File([blob], download, { type: 'image/png' });
+
+      if (navigator.canShare?.({ files: [file] }) && navigator.share) {
+        await navigator.share({
+          title: '我的 Livelink Agent',
+          text: '扫码认识我',
+          files: [file]
+        });
+      } else {
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        link.download = download;
+        link.click();
+        URL.revokeObjectURL(objectUrl);
+      }
+
+      setShareFeedback('海报已生成，可以保存或转发。');
+    } catch {
+      setShareFeedback('海报生成失败，请稍后重试。');
+    }
   };
 
   const openResetConfirm = () => {
@@ -1424,7 +1592,7 @@ export function AgentCreator() {
                   </button>
                   <button type="button" role="menuitem" onClick={openShareProfile}>
                     <b>分享主页</b>
-                    <span>复制公开链接，让别人直接看到你</span>
+                    <span>保存海报，让别人扫码看到你</span>
                   </button>
                   <button
                     type="button"
@@ -1693,34 +1861,42 @@ export function AgentCreator() {
                 }
               />
               <div className="content">
-                <div className="share-link-card">
-                  <span className="share-kicker">PUBLIC PROFILE</span>
-                  <h2>让别人直接链接到你</h2>
-                  <p>这个链接会打开你的公开数字分身主页，对方不需要登录也能了解你是谁、能提供什么、正在寻找什么。</p>
-                  <code>{publicProfileUrl}</code>
-                  {shareFeedback && <small>{shareFeedback}</small>}
-                  <div className="share-action-row">
-                    <button className="primary-action lime" type="button" onClick={copyPublicProfileLink}>
-                      复制公开链接
-                    </button>
-                    <button className="secondary-action" type="button" onClick={() => window.open(publicProfilePath, '_blank', 'noopener,noreferrer')}>
-                      打开公开页
-                    </button>
-                  </div>
-                </div>
-                <div className="poster-card">
+                <div className="poster-card" aria-label="可保存分享海报">
                   <span className="poster-brand">Livelink Agent</span>
-                  <h2>{nickname}<br />{profile.headline}</h2>
-                  <p>{profile.bio}</p>
-                  <div className="poster-tags">
-                    {tags.slice(0, 2).map((tag) => (
-                      <span key={tag}>{tag}</span>
-                    ))}
+                  <div className="poster-body">
+                    <h2>
+                      {nickname}
+                      <br />
+                      {profile.headline}
+                    </h2>
+                    <p>{profile.bio}</p>
+                    <div className="poster-tags">
+                      {tags.slice(0, 3).map((tag) => (
+                        <span key={tag}>{tag}</span>
+                      ))}
+                    </div>
                   </div>
-                  <div className="qr-box">SCAN</div>
+                  <div className="poster-footer">
+                    {shareQrMatrix && (
+                      <div className="poster-qr" aria-label="公开分身页二维码">
+                        <div className="poster-qr-grid" style={{ gridTemplateColumns: `repeat(${shareQrMatrix.size}, 1fr)` }}>
+                          {shareQrMatrix.modules.flatMap((row, rowIndex) =>
+                            row.map((isDark, colIndex) => <i className={isDark ? 'dark' : ''} key={`${rowIndex}-${colIndex}`} />)
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    <div className="poster-scan-copy">
+                      <small>SCAN TO CONNECT</small>
+                      <b>扫码认识我</b>
+                      <span>进入分身页，可一键复制联系方式</span>
+                    </div>
+                    <strong className="poster-contact-line">联系方式：{contactHandle}</strong>
+                  </div>
                 </div>
+                {shareFeedback && <p className="share-feedback">{shareFeedback}</p>}
                 <div className="sticky-actions">
-                  <button className="primary-action lime" type="button" onClick={copyPublicProfileLink}>
+                  <button className="primary-action lime" type="button" onClick={saveSharePoster} disabled={!shareQrMatrix}>
                     保存 / 分享海报
                   </button>
                 </div>
