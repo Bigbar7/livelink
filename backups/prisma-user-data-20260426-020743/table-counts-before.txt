@@ -1,0 +1,14 @@
+       table_name        | count 
+-------------------------+-------
+ Agent                   |    24
+ AgentProfile            |    25
+ CardVisit               |     0
+ ConnectionRequest       |    14
+ ProfileFact             |    84
+ ProfileProject          |    28
+ ProfileWiki             |     0
+ RecommendationCandidate |     0
+ SourceDocument          |    17
+ User                    |    24
+(10 rows)
+

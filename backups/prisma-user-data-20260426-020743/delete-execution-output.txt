@@ -1,0 +1,17 @@
+BEGIN
+DELETE 24
+       table_name        | count 
+-------------------------+-------
+ Agent                   |     0
+ AgentProfile            |     0
+ CardVisit               |     0
+ ConnectionRequest       |     0
+ ProfileFact             |     0
+ ProfileProject          |     0
+ ProfileWiki             |     0
+ RecommendationCandidate |     0
+ SourceDocument          |     0
+ User                    |     0
+(10 rows)
+
+COMMIT

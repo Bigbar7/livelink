@@ -89,6 +89,23 @@ export const mockAiClient: AiClient = {
     };
   },
 
+  async chatCreation(input) {
+    return {
+      role: 'assistant',
+      content: `我理解了：${input.message}。为了生成第一版分身，可以再补充一个代表项目、你能提供的价值，或你现在想认识谁。`,
+      readiness: 'medium',
+      filledSlots: ['identity', 'currentFocus'],
+      missingSlots: ['projects', 'skills', 'offers', 'wants'],
+      draftProfile: {
+        identity: 'AI 社交产品创造者',
+        currentFocus: input.message.slice(0, 36)
+      },
+      nextBestQuestion: '你能补充一个最近做过的代表项目吗？一句话也可以。',
+      suggestedReplies: ['我做过一个...', '最近项目是...', '先直接生成'],
+      nextAction: 'ask_more'
+    };
+  },
+
   async rankRecommendationCandidates(input) {
     return input.candidates
       .map((candidate) => ({

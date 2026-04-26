@@ -4,14 +4,16 @@ import { POST } from '@/app/api/agents/evolution-chat/route';
 import { generateAgentProfile } from '@/services/agent-generation-service';
 import { mockAiClient } from '@/services/ai/mock-ai-client';
 
-const { defaultAiClientMock, chatEvolution } = vi.hoisted(() => {
+const { defaultAiClientMock, chatEvolution, chatEvolutionContent } = vi.hoisted(() => {
+  const chatEvolutionContent = { value: '听起来你正在从 AI 社交名片转向硬件 AI。这个变化里最值得沉淀的是项目阶段、你负责的部分和正在寻找的伙伴。' };
   const chatEvolution = vi.fn(async () => ({
     role: 'assistant' as const,
-    content: '听起来你正在从 AI 社交名片转向硬件 AI。这个变化里最值得沉淀的是项目阶段、你负责的部分和正在寻找的伙伴。'
+    content: chatEvolutionContent.value
   }));
 
   return {
     chatEvolution,
+    chatEvolutionContent,
     defaultAiClientMock: {
       async extractKnowledge(input: { text: string }) {
         return {
@@ -63,6 +65,7 @@ async function clearDb() {
   await prisma.agent.deleteMany();
   await prisma.user.deleteMany();
   chatEvolution.mockClear();
+  chatEvolutionContent.value = '听起来你正在从 AI 社交名片转向硬件 AI。这个变化里最值得沉淀的是项目阶段、你负责的部分和正在寻找的伙伴。';
 }
 
 describe('POST /api/agents/evolution-chat', () => {
@@ -77,6 +80,23 @@ describe('POST /api/agents/evolution-chat', () => {
     );
 
     expect(response.status).toBe(400);
+  });
+
+  it('returns 404 instead of leaking a Prisma error when the agent cannot be found', async () => {
+    const response = await POST(
+      new Request('http://localhost/api/agents/evolution-chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: 'missing-user',
+          agentId: 'missing-agent',
+          message: '我最近在做硬件 AI'
+        })
+      })
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(404);
+    expect(body.error.message).toBe('Agent not found');
   });
 
   it('asks the real AI client to reply with current profile context', async () => {
@@ -108,5 +128,77 @@ describe('POST /api/agents/evolution-chat', () => {
       })
     );
     expect(await prisma.sourceDocument.count({ where: { agentId: initial.agent.id, sourceKind: 'evolution' } })).toBe(0);
+  });
+
+  it('accepts a second evolution chat turn with prior user and assistant history', async () => {
+    const initial = await generateAgentProfile({ displayName: 'Jun', contact: 'wx_jun7', text: '我在做 AI 社交名片。' }, mockAiClient);
+    const firstResponse = await POST(
+      new Request('http://localhost/api/agents/evolution-chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: initial.user.id,
+          agentId: initial.agent.id,
+          message: '我最近开始做硬件 AI 项目。',
+          conversation: []
+        })
+      })
+    );
+    const firstBody = await firstResponse.json();
+
+    const secondResponse = await POST(
+      new Request('http://localhost/api/agents/evolution-chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: initial.user.id,
+          agentId: initial.agent.id,
+          message: '现在还在样机验证阶段。',
+          conversation: [
+            { role: 'user', content: '我最近开始做硬件 AI 项目。' },
+            firstBody.data
+          ]
+        })
+      })
+    );
+    const secondBody = await secondResponse.json();
+
+    expect(firstResponse.status).toBe(200);
+    expect(secondResponse.status).toBe(200);
+    expect(secondBody.ok).toBe(true);
+  });
+
+  it('accepts a second evolution chat turn after a long assistant reply by truncating history', async () => {
+    chatEvolutionContent.value = '硬件 AI 进展。'.repeat(1200);
+    const initial = await generateAgentProfile({ displayName: 'Jun', contact: 'wx_jun7', text: '我在做 AI 社交名片。' }, mockAiClient);
+    const firstResponse = await POST(
+      new Request('http://localhost/api/agents/evolution-chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: initial.user.id,
+          agentId: initial.agent.id,
+          message: '我最近开始做硬件 AI 项目。',
+          conversation: []
+        })
+      })
+    );
+    const firstBody = await firstResponse.json();
+
+    const secondResponse = await POST(
+      new Request('http://localhost/api/agents/evolution-chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: initial.user.id,
+          agentId: initial.agent.id,
+          message: '现在还在样机验证阶段。',
+          conversation: [
+            { role: 'user', content: '我最近开始做硬件 AI 项目。' },
+            firstBody.data
+          ]
+        })
+      })
+    );
+
+    expect(firstResponse.status).toBe(200);
+    expect(firstBody.data.content.length).toBeGreaterThan(4000);
+    expect(secondResponse.status).toBe(200);
   });
 });

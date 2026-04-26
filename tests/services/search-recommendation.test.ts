@@ -149,6 +149,35 @@ describe('search and recommendation', () => {
     expect(results[0].profile.user.displayName).toBe('林晓玲');
   });
 
+  it('includes the recommended profile owner contact handle when available', async () => {
+    const current = await createAgent({ displayName: 'Jun' });
+    const target = await createAgent({ displayName: 'Lin' });
+    await prisma.sourceDocument.create({
+      data: {
+        userId: target.user.id,
+        agentId: target.agent.id,
+        sourceKind: 'manual',
+        sourceType: 'contact',
+        rawText: '联系方式：wx_lin_ai'
+      }
+    });
+    await prisma.agentProfile.create({
+      data: {
+        userId: target.user.id,
+        agentId: target.agent.id,
+        slug: 'lin-ai-engineer-contact',
+        status: 'published',
+        headline: 'AI Engineer',
+        bio: '擅长模型接入和后端工程化',
+        skillsJson: JSON.stringify(['AI 工程化'])
+      }
+    });
+
+    const results = await recommendProfiles(current.user.id, ['AI 工程化']);
+
+    expect(results[0].contactHandle).toBe('wx_lin_ai');
+  });
+
   it('ranks recommendations by match strength for the requested interest', async () => {
     const current = await createAgent({ displayName: 'Jun' });
     const stronger = await createAgent({ displayName: 'Edge AI Engineer' });

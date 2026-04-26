@@ -36,6 +36,21 @@ export type EvolutionChatMessage = {
   content: string;
 };
 
+export type CreationChatMessage = EvolutionChatMessage;
+
+export type CreationProfileSlot = 'identity' | 'currentFocus' | 'projects' | 'skills' | 'offers' | 'wants';
+export type CreationDraftProfile = Partial<Record<CreationProfileSlot, string>>;
+
+export type CreationChatState = CreationChatMessage & {
+  readiness: 'low' | 'medium' | 'ready';
+  filledSlots: CreationProfileSlot[];
+  missingSlots: CreationProfileSlot[];
+  nextBestQuestion: string;
+  suggestedReplies: string[];
+  nextAction: 'ask_more' | 'suggest_generate';
+  draftProfile: CreationDraftProfile;
+};
+
 export type EvolutionProfileContext = {
   headline: string;
   bio: string;
@@ -69,6 +84,11 @@ export type RankedRecommendation = {
 export interface AiClient {
   extractKnowledge(input: { text: string; title?: string }): Promise<ExtractedKnowledge>;
   generateProfileDraft?(input: { text: string; title?: string }): Promise<GeneratedAgentProfileDraft>;
+  chatCreation?(input: {
+    message: string;
+    conversation: CreationChatMessage[];
+    user: { displayName: string };
+  }): Promise<CreationChatMessage | CreationChatState>;
   chatEvolution?(input: {
     message: string;
     conversation: EvolutionChatMessage[];

@@ -11,6 +11,15 @@ type RecommendedProfile = Prisma.AgentProfileGetPayload<{
         city: true;
       };
     };
+    agent: {
+      select: {
+        sources: {
+          select: {
+            rawText: true;
+          };
+        };
+      };
+    };
   };
 }>;
 
@@ -63,7 +72,18 @@ type RecommendationResult = {
   score: number;
   reason: string;
   topic?: string;
+  contactHandle?: string;
 };
+
+function parseContactHandle(rawText?: string | null) {
+  const text = rawText?.trim();
+  if (!text) return undefined;
+  return text.replace(/^联系方式[:：]\s*/, '').trim() || undefined;
+}
+
+function profileContactHandle(profile: RecommendedProfile) {
+  return parseContactHandle(profile.agent.sources[0]?.rawText);
+}
 
 function sanitizeAiScore(score: number) {
   return Math.max(0, Math.min(100, Math.round(Number.isFinite(score) ? score : 0)));
@@ -103,6 +123,16 @@ export async function recommendProfiles(
     include: {
       user: {
         select: { displayName: true, role: true, city: true }
+      },
+      agent: {
+        select: {
+          sources: {
+            where: { sourceType: 'contact' },
+            select: { rawText: true },
+            orderBy: { createdAt: 'asc' },
+            take: 1
+          }
+        }
       }
     },
     orderBy: { updatedAt: 'desc' },
@@ -151,7 +181,8 @@ export async function recommendProfiles(
           profile: fallback.profile,
           score,
           reason: item.reason?.trim() || fallback.reason,
-          topic: item.topic?.trim()
+          topic: item.topic?.trim(),
+          contactHandle: profileContactHandle(fallback.profile)
         };
       })
       .filter((item): item is RecommendationResult => Boolean(item))
@@ -169,5 +200,9 @@ export async function recommendProfiles(
       if (second.score !== first.score) return second.score - first.score;
       return second.profile.updatedAt.getTime() - first.profile.updatedAt.getTime();
     })
-    .slice(0, 10);
+    .slice(0, 10)
+    .map((item) => ({
+      ...item,
+      contactHandle: profileContactHandle(item.profile)
+    }));
 }

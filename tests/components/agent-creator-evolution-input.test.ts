@@ -21,6 +21,47 @@ describe('AgentCreator evolution input', () => {
     expect(componentSource).not.toContain('useState(\'https://github.com/jun/livelink');
   });
 
+  it('does not fake assistant replies during first-time creation chat', () => {
+    expect(componentSource).not.toContain('收到，我会把这段信息纳入首次分身生成资料。你可以继续补充，或直接生成。');
+    expect(componentSource).toContain('isCreationChatting');
+    expect(componentSource).toContain('/api/agents/creation-chat');
+  });
+
+  it('shows creation chat gaps and suggested replies from AI state', () => {
+    expect(componentSource).toContain('creationChatState');
+    expect(componentSource).toContain('资料完整度');
+    expect(componentSource).toContain('missingSlots');
+    expect(componentSource).toContain('suggestedReplies');
+    expect(componentSource).toContain('资料已足够，生成第一版');
+  });
+
+  it('uses the approved mobile creation layout with source cards and a collapsible live draft', () => {
+    expect(componentSource).toContain('creation-source-flow');
+    expect(componentSource).toContain('creation-source-card ai');
+    expect(componentSource).toContain('和 AI 聊聊');
+    expect(componentSource).not.toContain('开始创建');
+    expect(componentSource).not.toContain('creationPrimaryActionText');
+    expect(componentSource).toContain('creation-chat-screen');
+    expect(componentSource).toContain('<Header title="AI 创建中" action={creationChatCompleteness} />');
+    expect(componentSource).toContain('creation-chat-content');
+    expect(componentSource).toContain('creation-live-draft');
+    expect(componentSource).toContain('实时分身草稿');
+    expect(componentSource).toContain('creationDraftRows');
+    expect(componentSource).toContain('draftProfile');
+    expect(componentSource).not.toContain('<span>完整度</span>');
+    expect(componentSource).not.toContain('<span>已覆盖</span>');
+    expect(componentSource).toContain('setShowCreationDraft');
+    expect(componentSource).toContain('aria-expanded={showCreationDraft}');
+    expect(componentSource).not.toContain('className="mode-tabs"');
+
+    expect(styleSource).toContain('.creation-source-flow');
+    expect(styleSource).toContain('.creation-source-card.ai');
+    expect(styleSource).toContain('.creation-chat-content {\n  padding-top: 6px;\n  display: flex;\n  flex-direction: column;');
+    expect(styleSource).toContain('.creation-chat-content .creation-chat-workspace {\n  flex: 1 1 auto;\n  min-height: 0;');
+    expect(styleSource).toContain('.creation-chat-content .creation-thread');
+    expect(styleSource).toContain('.creation-live-draft-toggle');
+  });
+
   it('uses AI conversation as the main entry after a profile exists', () => {
     expect(componentSource).toContain('进化分身 · AI 对话主入口');
     expect(componentSource).toContain('系统识别到你已有分身');

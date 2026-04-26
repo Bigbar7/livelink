@@ -63,6 +63,21 @@ describe('POST /api/agents/evolve', () => {
     expect(response.status).toBe(400);
   });
 
+  it('returns 404 instead of leaking a Prisma error when the agent cannot be found', async () => {
+    const response = await POST(new Request('http://localhost/api/agents/evolve', {
+      method: 'POST',
+      body: JSON.stringify({
+        userId: 'missing-user',
+        agentId: 'missing-agent',
+        text: '更新近况'
+      })
+    }));
+    const body = await response.json();
+
+    expect(response.status).toBe(404);
+    expect(body.error.message).toBe('Agent not found');
+  });
+
   it('updates an existing agent profile from evolution text', async () => {
     const initial = await generateAgentProfile({ displayName: 'Jun', contact: 'wx_jun7', text: '我在做 AI 社交名片。' }, mockAiClient);
     const response = await POST(new Request('http://localhost/api/agents/evolve', {
@@ -81,5 +96,23 @@ describe('POST /api/agents/evolve', () => {
     expect(body.data.agent.id).toBe(initial.agent.id);
     expect(body.data.profile.id).not.toBe(initial.profile.id);
     expect(await prisma.agent.count()).toBe(1);
+  });
+
+  it('accepts long assistant replies in evolution history when saving', async () => {
+    const initial = await generateAgentProfile({ displayName: 'Jun', contact: 'wx_jun7', text: '我在做 AI 社交名片。' }, mockAiClient);
+    const response = await POST(new Request('http://localhost/api/agents/evolve', {
+      method: 'POST',
+      body: JSON.stringify({
+        userId: initial.user.id,
+        agentId: initial.agent.id,
+        text: '我最近开始做硬件 AI 项目，想找供应链伙伴。',
+        conversation: [
+          { role: 'user', content: '我最近开始做硬件 AI 项目。' },
+          { role: 'assistant', content: '硬件 AI 进展。'.repeat(1200) }
+        ]
+      })
+    }));
+
+    expect(response.status).toBe(200);
   });
 });

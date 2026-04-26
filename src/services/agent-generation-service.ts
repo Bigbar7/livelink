@@ -1,4 +1,5 @@
 import type { AiClient } from '@/services/ai/ai-client';
+import type { CreationChatState, CreationDraftProfile, CreationProfileSlot } from '@/services/ai/ai-client';
 import { createAgent } from '@/services/agent-service';
 import { generatePublishedCardFromKnowledge, publishGeneratedCard } from '@/services/card-service';
 import { confirmAgentKnowledge, extractKnowledgeFromSource } from '@/services/knowledge-service';
@@ -35,6 +36,12 @@ export type EvolveAgentProfileInput = {
   userId: string;
   agentId: string;
   text?: string;
+  conversation?: ConversationMessage[];
+};
+
+export type CreationChatInput = {
+  displayName: string;
+  message: string;
   conversation?: ConversationMessage[];
 };
 
@@ -102,6 +109,118 @@ function conversationText(messages: ConversationMessage[] = []) {
   return messages.map((message) => `${message.role === 'user' ? '用户' : 'AI'}：${message.content}`).join('\n');
 }
 
+const creationProfileSlots: CreationProfileSlot[] = ['identity', 'currentFocus', 'projects', 'skills', 'offers', 'wants'];
+
+function hasSlot(value: unknown): value is CreationProfileSlot {
+  return typeof value === 'string' && creationProfileSlots.includes(value as CreationProfileSlot);
+}
+
+function normalizeSlots(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.filter(hasSlot).filter((slot, index, slots) => slots.indexOf(slot) === index);
+}
+
+function inferCreationSlots(input: CreationChatInput) {
+  const text = [conversationText(input.conversation), input.message].filter(Boolean).join('\n');
+  const filled = new Set<CreationProfileSlot>();
+
+  if (/我是|我叫|我的身份|产品经理|工程师|设计师|创始人|创业者|Builder|builder|开发者|负责人|在做/.test(text)) {
+    filled.add('identity');
+  }
+  if (/现在|最近|正在|在做|方向|主业|关注|研究|推进/.test(text)) {
+    filled.add('currentFocus');
+  }
+  if (/项目|作品|案例|做过|负责|上线|产品|系统|应用|平台/.test(text)) {
+    filled.add('projects');
+  }
+  if (/擅长|能力|技能|会|熟悉|经验|设计|开发|增长|运营|算法|工程化/.test(text)) {
+    filled.add('skills');
+  }
+  if (/提供|帮助|可以为|能为|资源|服务|咨询|合作/.test(text)) {
+    filled.add('offers');
+  }
+  if (/想找|寻找|希望认识|想认识|需要|需求|伙伴|合作方/.test(text)) {
+    filled.add('wants');
+  }
+
+  return [...filled];
+}
+
+function suggestedRepliesFor(question: string, missingSlots: CreationProfileSlot[]) {
+  if (question.includes('能力') || missingSlots[0] === 'skills') return ['我擅长...', '我主要负责...', '暂时跳过'];
+  if (question.includes('项目') || missingSlots[0] === 'projects') return ['我做过一个...', '最近项目是...', '暂时没有项目'];
+  if (question.includes('提供') || missingSlots[0] === 'offers') return ['我可以提供...', '我能帮别人...', '暂时跳过'];
+  if (question.includes('认识') || missingSlots[0] === 'wants') return ['我想认识...', '我正在寻找...', '先直接生成'];
+  return ['我现在是...', '我最近在做...', '先直接生成'];
+}
+
+function defaultCreationQuestion(missingSlots: CreationProfileSlot[]) {
+  const firstMissing = missingSlots[0];
+  if (firstMissing === 'projects') return '你能补充一个最近做过的代表项目吗？一句话也可以。';
+  if (firstMissing === 'skills') return '你最想被别人记住的一个能力是什么？';
+  if (firstMissing === 'offers') return '你能为别人提供什么帮助、资源或经验？';
+  if (firstMissing === 'wants') return '你现在最想认识什么样的人？';
+  if (firstMissing === 'currentFocus') return '你现在主要在做什么方向？';
+  return '你希望自己的第一版分身被别人记住为什么身份？';
+}
+
+function normalizeDraftProfile(input: unknown): CreationDraftProfile {
+  if (!input || typeof input !== 'object') return {};
+
+  return creationProfileSlots.reduce<CreationDraftProfile>((draft, slot) => {
+    const value = (input as Partial<Record<CreationProfileSlot, unknown>>)[slot];
+    if (typeof value === 'string' && value.trim()) {
+      draft[slot] = value.trim().slice(0, 80);
+    }
+    return draft;
+  }, {});
+}
+
+function normalizeCreationChatState(input: CreationChatInput, result: Awaited<ReturnType<NonNullable<AiClient['chatCreation']>>>): CreationChatState {
+  const resultRecord = result as Partial<CreationChatState>;
+  const inferredFilledSlots = inferCreationSlots(input);
+  const draftProfile = normalizeDraftProfile(resultRecord.draftProfile);
+  const draftFilledSlots = creationProfileSlots.filter((slot) => Boolean(draftProfile[slot]));
+  const resultFilledSlots = normalizeSlots(resultRecord.filledSlots);
+  const filledSlots = Array.from(new Set([...(resultFilledSlots.length > 0 ? resultFilledSlots : inferredFilledSlots), ...draftFilledSlots]));
+  const normalizedMissingSlots = normalizeSlots(resultRecord.missingSlots);
+  const missingSlots =
+    normalizedMissingSlots.length > 0
+      ? normalizedMissingSlots.filter((slot) => !filledSlots.includes(slot))
+      : creationProfileSlots.filter((slot) => !filledSlots.includes(slot));
+  const userTurns = (input.conversation ?? []).filter((message) => message.role === 'user').length + 1;
+  const readiness: CreationChatState['readiness'] =
+    resultRecord.readiness === 'ready' || filledSlots.length >= 4 || userTurns >= 3
+      ? 'ready'
+      : resultRecord.readiness === 'medium' || filledSlots.length >= 2
+        ? 'medium'
+        : 'low';
+  const nextAction: CreationChatState['nextAction'] =
+    resultRecord.nextAction === 'suggest_generate' || readiness === 'ready' ? 'suggest_generate' : 'ask_more';
+  const nextBestQuestion =
+    typeof resultRecord.nextBestQuestion === 'string' && resultRecord.nextBestQuestion.trim()
+      ? resultRecord.nextBestQuestion.trim()
+      : nextAction === 'suggest_generate'
+        ? '现在可以点击“生成我的分身”，也可以继续补充一个你最想强调的亮点。'
+        : result.content || defaultCreationQuestion(missingSlots);
+  const suggestedReplies =
+    Array.isArray(resultRecord.suggestedReplies) && resultRecord.suggestedReplies.some((item) => typeof item === 'string')
+      ? resultRecord.suggestedReplies.filter((item): item is string => typeof item === 'string').slice(0, 3)
+      : suggestedRepliesFor(nextBestQuestion, missingSlots);
+
+  return {
+    role: 'assistant',
+    content: result.content,
+    readiness,
+    filledSlots,
+    missingSlots,
+    nextBestQuestion,
+    suggestedReplies,
+    nextAction,
+    draftProfile
+  };
+}
+
 const factTypes = ['identity', 'skill', 'experience', 'project', 'topic', 'offer', 'want', 'achievement', 'link'] as const;
 
 function normalizeFactType(fact: { factType?: unknown; title?: unknown; summary?: unknown }) {
@@ -130,12 +249,26 @@ function normalizeString(value: unknown, fallback = '') {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback;
 }
 
+export async function chatAgentCreation(input: CreationChatInput, aiClient: AiClient) {
+  if (!aiClient.chatCreation) {
+    throw new Error('Creation chat is unavailable');
+  }
+
+  const result = await aiClient.chatCreation({
+    message: input.message,
+    conversation: input.conversation ?? [],
+    user: { displayName: input.displayName }
+  });
+
+  return normalizeCreationChatState(input, result);
+}
+
 export async function chatAgentEvolution(input: EvolutionChatInput, aiClient: AiClient) {
   if (!aiClient.chatEvolution) {
     throw new Error('Evolution chat is unavailable');
   }
 
-  const agent = await prisma.agent.findFirstOrThrow({
+  const agent = await prisma.agent.findFirst({
     where: {
       id: input.agentId,
       userId: input.userId
@@ -148,6 +281,9 @@ export async function chatAgentEvolution(input: EvolutionChatInput, aiClient: Ai
       }
     }
   });
+  if (!agent) {
+    throw new Error('Agent not found for user');
+  }
   const latestProfile = agent.cards[0];
 
   return aiClient.chatEvolution({
@@ -334,7 +470,7 @@ export async function generateAgentProfile(input: GenerateAgentProfileInput, aiC
 }
 
 export async function evolveAgentProfile(input: EvolveAgentProfileInput, aiClient: AiClient) {
-  const agent = await prisma.agent.findFirstOrThrow({
+  const agent = await prisma.agent.findFirst({
     where: {
       id: input.agentId,
       userId: input.userId
@@ -347,6 +483,9 @@ export async function evolveAgentProfile(input: EvolveAgentProfileInput, aiClien
       }
     }
   });
+  if (!agent) {
+    throw new Error('Agent not found for user');
+  }
 
   const latestProfile = agent.cards[0];
   const messageText = conversationText(input.conversation);

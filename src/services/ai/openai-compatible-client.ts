@@ -1,5 +1,5 @@
 import type { ExtractedKnowledge } from '@/types/domain';
-import type { AiClient, GeneratedProfileCard, RankedRecommendation } from './ai-client';
+import type { AiClient, CreationChatState, EvolutionProfileContext, GeneratedProfileCard, RankedRecommendation } from './ai-client';
 
 type ChatMessage = {
   role: 'system' | 'user';
@@ -291,6 +291,29 @@ const publicAgentProfilePrivacyGuidance =
 const publicAgentProfileStyleGuidance =
   '公开展示文案采用极简、极精炼、短词或短句风格。不要写成简历，不要写岗位职责、时间线、学校/公司履历、项目复盘或自我介绍长段落；不要出现具体项目内容、项目名称堆叠、简历原文近似表达或可被反向搜索的细节。面向 AI 爱好者、投资人、创业者、互联网或科技公司成员来写：让他们快速看懂这个人值得聊什么、能交换什么、可能一起探索什么，并愿意建立社交关系。headline 控制在一个清晰身份/价值短句；bio 控制在一句话；tags、skills、interests、offers、wants、icebreakers 都用短词或短句，优先写“AI 产品洞察”“增长实验”“技术商业化”“早期机会判断”这类可社交、可破冰、可合作的抽象能力或主题。';
 
+function hasProfileItems(items: string[]) {
+  return items.some((item) => item.trim());
+}
+
+function buildEvolutionMissingProfileSlots(currentProfile: EvolutionProfileContext | null) {
+  if (!currentProfile) {
+    return ['身份定位', '当前方向', '代表项目或经历', '擅长能力', '可提供资源', '正在寻找的人'];
+  }
+
+  const missingSlots = [];
+  const hasIdentity = currentProfile.headline.trim() || currentProfile.bio.trim() || hasProfileItems(currentProfile.tags);
+  const hasCurrentFocus = hasProfileItems(currentProfile.interests) || hasProfileItems(currentProfile.tags);
+
+  if (!hasIdentity) missingSlots.push('身份定位');
+  if (!hasCurrentFocus) missingSlots.push('当前方向');
+  missingSlots.push('代表项目或经历');
+  if (!hasProfileItems(currentProfile.skills)) missingSlots.push('擅长能力');
+  if (!hasProfileItems(currentProfile.offers)) missingSlots.push('可提供资源');
+  if (!hasProfileItems(currentProfile.wants)) missingSlots.push('正在寻找的人');
+
+  return missingSlots;
+}
+
 export const openAiCompatibleClient: AiClient = {
   async rankRecommendationCandidates(input) {
     const response = await completeJson<{ recommendations: RankedRecommendation[] }>([
@@ -311,7 +334,40 @@ export const openAiCompatibleClient: AiClient = {
     return response.recommendations;
   },
 
+  async chatCreation(input) {
+    const conversation = input.conversation
+      .map((message) => `${message.role === 'user' ? '用户' : 'AI'}：${message.content}`)
+      .join('\n');
+
+    return completeJson<CreationChatState>([
+      {
+        role: 'system',
+        content: [
+          '你是 Livelink 的首次分身创建对话助手。你的目标不是无限聊天，而是在尽量少的轮次内帮助用户生成第一版 Agent Profile。',
+          '你需要判断 6 个资料槽位：identity（我是谁/身份定位）、currentFocus（现在在做什么）、projects（代表项目或经历）、skills（擅长能力）、offers（我能提供什么）、wants（我想认识谁/当前需求）。',
+          '每次回复最多问 1 个主问题，不要重复追问已经出现的信息。',
+          '如果用户已经提供 3 类以上有效信息，或用户已发送 3 轮消息，必须收束并建议生成第一版分身。',
+          '信息不完整也可以生成第一版，后续可以继续进化。',
+          '不要说“我已经保存/更新资料”。当资料足够时，明确告诉用户：现在可以点击“生成我的分身”。',
+          '同时返回 draftProfile，作为页面里的“实时分身草稿”：{"identity":"一句身份定位","currentFocus":"当前方向","projects":"代表项目或经历","skills":"擅长能力","offers":"可提供价值","wants":"想认识的人或当前需求"}。draftProfile 只能填写用户明确说过或可从对话直接概括的信息，不确定的字段留空字符串，不要编造。',
+          '返回 JSON：{"role":"assistant","content":"给用户看的短回复","readiness":"low|medium|ready","filledSlots":["identity"],"missingSlots":["projects"],"draftProfile":{"identity":"","currentFocus":"","projects":"","skills":"","offers":"","wants":""},"nextBestQuestion":"下一步最该补的问题","suggestedReplies":["我擅长...","我做过一个...","先直接生成"],"nextAction":"ask_more|suggest_generate"}。filledSlots 和 missingSlots 只能使用 identity、currentFocus、projects、skills、offers、wants。content 要自然、短，不要像表单。'
+        ].join('')
+      },
+      {
+        role: 'user',
+        content: [
+          `用户：${input.user.displayName}`,
+          conversation ? `历史对话：\n${conversation}` : '',
+          `用户最新消息：${input.message}`
+        ]
+          .filter(Boolean)
+          .join('\n\n')
+      }
+    ]);
+  },
+
   async chatEvolution(input) {
+    const missingProfileSlots = buildEvolutionMissingProfileSlots(input.currentProfile);
     const currentProfile = input.currentProfile
       ? [
           `定位：${input.currentProfile.headline}`,
@@ -330,8 +386,15 @@ export const openAiCompatibleClient: AiClient = {
     const content = await completeText([
       {
         role: 'system',
-        content:
-          '你是 Livelink 的分身进化对话助手。你的任务是和用户进行真实对话，帮助用户澄清最近变化，并为后续 Agent Profile 提炼留下可验证素材。不要直接声称已保存或已更新资料；每次回复要自然、简洁，优先追问项目阶段、用户角色、能力变化、可提供资源、正在寻找的人。'
+        content: [
+          '你是 Livelink 的分身进化对话助手。你的目标参考首次分身创建：不是无限聊天，而是在尽量少的轮次内帮助用户补齐或更新新版 Agent Profile 所需素材。',
+          '你需要判断 6 个资料槽位：identity（我是谁/身份定位）、currentFocus（现在在做什么）、projects（代表项目或经历）、skills（擅长能力）、offers（我能提供什么）、wants（我想认识谁/当前需求）。',
+          '优先引导用户补充当前分身里没有、过期或太空泛的信息；如果当前摘要已经有某类信息，不要重复追问同一类内容。',
+          '每次回复最多问 1 个主问题，不要围绕同一个话题连续追问；如果用户连续两轮都在回答同一主题，要主动切到其他缺失槽位，或收束建议生成新版分身。',
+          '如果用户已经提供 3 类以上有效更新信息，或用户已发送 3 轮消息，必须收束并建议用户生成新版分身。',
+          '信息不完整也可以生成新版分身，后续可以继续进化。',
+          '不要直接声称已保存或已更新资料。回复要自然、简洁；当资料足够时，明确告诉用户：现在可以生成新版分身。'
+        ].join('')
       },
       {
         role: 'user',
@@ -339,6 +402,7 @@ export const openAiCompatibleClient: AiClient = {
           `用户：${input.user.displayName}`,
           '当前分身摘要：',
           currentProfile,
+          `当前可能缺失的信息：${missingProfileSlots.join('、')}`,
           conversation ? `历史对话：\n${conversation}` : '',
           `用户最新消息：${input.message}`
         ]

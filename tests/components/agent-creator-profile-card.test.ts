@@ -7,31 +7,37 @@ const styleSource = readFileSync(join(process.cwd(), 'src/app/globals.css'), 'ut
 const tagsRule = styleSource.match(/\.prompt-list,\n\.tags \{[\s\S]*?\n\}/)?.[0] ?? '';
 
 describe('AgentCreator profile card template', () => {
-  it('renders the agent page with identity, updates, highlights, domains, persona, and needs sections', () => {
+  it('renders the digital clone page with identity, updates, link style, highlights, domains, and goals', () => {
     expect(componentSource).toContain('profile-identity');
+    expect(componentSource).toContain('我的数字分身');
     expect(componentSource).toContain('近况流');
+    expect(componentSource).toContain('link风格');
     expect(componentSource).toContain('履历亮点');
     expect(componentSource).toContain('领域画像');
-    expect(componentSource).toContain('人格兽');
-    expect(componentSource).toContain('最近需求');
+    expect(componentSource).toContain('我能提供');
+    expect(componentSource).toContain('我正在寻找');
+    expect(componentSource).not.toContain('人格兽');
+    expect(componentSource).not.toContain('最近需求');
+    expect(componentSource).not.toContain('破冰问题');
   });
 
-  it('styles the redesigned profile sections as distinct cards', () => {
+  it('styles the redesigned profile page as a compact single-column layout', () => {
     expect(styleSource).toContain('.profile-identity');
-    expect(styleSource).toContain('.profile-actions');
+    expect(styleSource).toContain('.profile-contact-inline');
     expect(styleSource).toContain('.profile-section');
     expect(styleSource).toContain('.domain-grid');
-    expect(styleSource).toContain('.persona-beast');
-    expect(styleSource).toContain('.need-card');
+    expect(styleSource).toContain('.profile-sticky-cta');
+    expect(styleSource).toContain('.link-style-card');
   });
 
-  it('shows contact as a lightweight action instead of a profile field', () => {
-    expect(componentSource).toContain('profile-actions');
-    expect(componentSource).toContain('profile-handle');
-    expect(componentSource).toContain('联系分身');
+  it('shows contact beside the nickname without a copy action', () => {
+    expect(componentSource).toContain('profile-name-line');
+    expect(componentSource).toContain('profile-contact-inline');
+    expect(componentSource).not.toContain('>复制</button>');
+    expect(componentSource).not.toContain('联系分身');
     expect(componentSource).not.toContain('SummaryRow title="联系方式"');
-    expect(componentSource).not.toContain('<b>联系方式</b>');
-    expect(componentSource).toContain('这是你的数字分身');
+    expect(componentSource).not.toContain('navigator.clipboard?.writeText(contactHandle)');
+    expect(componentSource).not.toContain('这是你的数字分身');
   });
 
   it('allows profile tags to scroll horizontally instead of clipping overflow', () => {
@@ -57,11 +63,59 @@ describe('AgentCreator profile card template', () => {
     expect(componentSource).toContain('analysis.needs');
   });
 
-  it('expands the profile top-right action into a reset menu that preserves nickname and contact', () => {
-    expect(componentSource).toContain('showProfileMenu');
+  it('adds a structured edit page with separate nickname and contact fields', () => {
+    expect(componentSource).toContain("FlowStep = 'home' | 'input' | 'generating' | 'card' | 'edit'");
+    expect(componentSource).toContain('edit-profile-screen');
+    expect(componentSource).toContain('编辑数字分身');
+    expect(componentSource).toContain('基础');
+    expect(componentSource).toContain('画像');
+    expect(componentSource).toContain('目标');
+    expect(componentSource).toContain('editNickname');
+    expect(componentSource).toContain('editContact');
+    expect(componentSource).toContain('/api/agents/${generated.agent.id}/profile');
+    expect(componentSource).toContain('取消');
+    expect(componentSource).not.toContain('预览');
+    expect(componentSource).toContain('保存');
+  });
+
+  it('edits tags as sortable removable chips instead of a single line input', () => {
+    expect(componentSource).toContain('editTags');
+    expect(componentSource).toContain('editTagDraft');
+    expect(componentSource).toContain('addEditTag');
+    expect(componentSource).toContain('removeEditTag');
+    expect(componentSource).toContain('draggedEditTagIndex');
+    expect(componentSource).toContain('reorderEditTags');
+    expect(componentSource).toContain('edit-tag-editor');
+    expect(componentSource).toContain('aria-label={`删除标签 ${tag}`}');
+    expect(componentSource).toContain('draggable');
+    expect(componentSource).toContain('onDragStart');
+    expect(componentSource).toContain('onDragOver');
+    expect(componentSource).toContain('onDrop');
+    expect(componentSource).not.toContain('const moveEditTag');
+    expect(componentSource).not.toContain('aria-label={`上移标签 ${tag}`}');
+    expect(componentSource).not.toContain('aria-label={`下移标签 ${tag}`}');
+    expect(componentSource).not.toContain('value={editTagsText}');
+    expect(styleSource).toContain('.edit-tag-editor');
+    expect(styleSource).toContain('.edit-tag-chip');
+    expect(styleSource).toContain('.edit-tag-chip.is-dragging');
+    expect(styleSource).toContain('.edit-tag-add');
+  });
+
+  it('keeps reset available from the edit page and preserves nickname and contact', () => {
     expect(componentSource).toContain('resetPersonalInfo');
     expect(componentSource).toContain('/personal-info');
     expect(componentSource).toContain('清空资料');
     expect(componentSource).toContain('保留昵称和联系方式');
+    expect(componentSource).toContain('取消');
+    expect(componentSource).toContain('确认清空');
+    expect(componentSource).not.toContain('window.confirm');
+  });
+
+  it('uses one top-level reset confirmation flow for both card and edit page reset actions', () => {
+    expect(componentSource.match(/showResetConfirm &&/g)).toHaveLength(1);
+    expect(componentSource).toContain('const openResetConfirm = () => {');
+    expect(componentSource).toContain('onClick={openResetConfirm}');
+    expect(componentSource).toContain('id="reset-confirm-title"');
+    expect(componentSource).not.toContain('id="edit-reset-confirm-title"');
   });
 });

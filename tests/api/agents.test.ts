@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { POST } from '@/app/api/agents/route';
 import { POST as generateProfilePOST } from '@/app/api/agents/generate-profile/route';
+import { PATCH as updateProfilePATCH } from '@/app/api/agents/[agentId]/profile/route';
 import { DELETE as resetPersonalInfoDELETE } from '@/app/api/agents/[agentId]/personal-info/route';
 import { prisma } from '@/lib/db';
 import { generateAgentProfile } from '@/services/agent-generation-service';
@@ -117,5 +118,43 @@ describe('POST /api/agents', () => {
     expect(body.data.contact).toBe('wx_jun7');
     await expect(prisma.agentProfile.count({ where: { agentId: generated.agent.id } })).resolves.toBe(0);
     await expect(prisma.sourceDocument.count({ where: { agentId: generated.agent.id, sourceType: 'contact' } })).resolves.toBe(1);
+  });
+
+  it('updates the current digital clone profile and preserved contact', async () => {
+    const generated = await generateAgentProfile({ displayName: 'Jun', contact: 'wx_jun7', text: '我在做 AI 社交名片。' }, mockAiClient);
+
+    const response = await updateProfilePATCH(
+      new Request(`http://localhost/api/agents/${generated.agent.id}/profile`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          userId: generated.user.id,
+          profileId: generated.profile.id,
+          displayName: 'Jun7',
+          contact: 'wx_jun7_new',
+          headline: '数字分身产品 Builder',
+          bio: '正在打磨 Livelink 的个人分身详情页。',
+          tags: ['AI 社交', '产品设计'],
+          offers: ['产品原型', '需求梳理'],
+          wants: ['前端工程师'],
+          analysis: {
+            recentUpdates: ['重做详情页'],
+            careerHighlights: ['把分身页从名片改成资料页'],
+            domainSignals: [{ name: 'AI 社交', evidence: '手动编辑' }],
+            persona: { title: '高密度连接', description: '偏向直接交换上下文。', confidence: 1 },
+            needs: ['前端工程师']
+          }
+        })
+      }),
+      { params: Promise.resolve({ agentId: generated.agent.id }) }
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data.user.displayName).toBe('Jun7');
+    expect(body.data.profile.headline).toBe('数字分身产品 Builder');
+    expect(JSON.parse(body.data.profile.tagsJson)).toEqual(['AI 社交', '产品设计']);
+    await expect(prisma.sourceDocument.findFirstOrThrow({ where: { agentId: generated.agent.id, sourceType: 'contact' } })).resolves.toMatchObject({
+      rawText: '联系方式：wx_jun7_new'
+    });
   });
 });

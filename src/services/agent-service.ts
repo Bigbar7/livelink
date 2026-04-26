@@ -1,5 +1,17 @@
 import { prisma } from '@/lib/db';
 
+type ProfileAnalysisInput = {
+  recentUpdates: string[];
+  careerHighlights: string[];
+  domainSignals: Array<{ name: string; evidence?: string }>;
+  persona: {
+    title?: string;
+    description?: string;
+    confidence?: number;
+  };
+  needs: string[];
+};
+
 export async function createAgent(input: {
   displayName: string;
   agentName?: string;
@@ -87,6 +99,117 @@ function parseContactHandle(rawText?: string | null) {
   if (!text) return '';
 
   return text.replace(/^联系方式[:：]\s*/, '').trim();
+}
+
+export async function updateAgentProfile(input: {
+  userId: string;
+  agentId: string;
+  profileId: string;
+  displayName: string;
+  contact: string;
+  headline: string;
+  bio: string;
+  tags: string[];
+  offers: string[];
+  wants: string[];
+  analysis: ProfileAnalysisInput;
+}) {
+  const displayName = input.displayName.trim();
+  const contact = input.contact.trim();
+
+  if (!displayName) {
+    throw new Error('Display name is required');
+  }
+
+  if (!contact) {
+    throw new Error('Contact is required');
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const agent = await tx.agent.findFirst({
+      where: {
+        id: input.agentId,
+        userId: input.userId
+      }
+    });
+
+    if (!agent) {
+      throw new Error('Agent not found for user');
+    }
+
+    const existingProfile = await tx.agentProfile.findFirst({
+      where: {
+        id: input.profileId,
+        userId: input.userId,
+        agentId: input.agentId
+      }
+    });
+
+    if (!existingProfile) {
+      throw new Error('Profile not found for user');
+    }
+
+    const existingContact = await tx.sourceDocument.findFirst({
+      where: {
+        userId: input.userId,
+        agentId: input.agentId,
+        sourceType: 'contact'
+      },
+      orderBy: { createdAt: 'asc' }
+    });
+
+    const [user, updatedAgent, profile] = await Promise.all([
+      tx.user.update({
+        where: { id: input.userId },
+        data: { displayName }
+      }),
+      tx.agent.update({
+        where: { id: input.agentId },
+        data: { name: `${displayName} 的数字分身` }
+      }),
+      tx.agentProfile.update({
+        where: { id: input.profileId },
+        data: {
+          headline: input.headline.trim() || existingProfile.headline,
+          bio: input.bio.trim() || existingProfile.bio,
+          tagsJson: JSON.stringify(input.tags),
+          offersJson: JSON.stringify(input.offers),
+          wantsJson: JSON.stringify(input.wants),
+          analysisJson: JSON.stringify(input.analysis)
+        },
+        include: {
+          user: {
+            select: { displayName: true, role: true, city: true }
+          }
+        }
+      })
+    ]);
+
+    if (existingContact) {
+      await tx.sourceDocument.update({
+        where: { id: existingContact.id },
+        data: { rawText: `联系方式：${contact}` }
+      });
+    } else {
+      await tx.sourceDocument.create({
+        data: {
+          userId: input.userId,
+          agentId: input.agentId,
+          sourceKind: 'manual',
+          sourceType: 'contact',
+          title: '联系方式',
+          rawText: `联系方式：${contact}`
+        }
+      });
+    }
+
+    return {
+      user,
+      agent: updatedAgent,
+      profile,
+      contact
+    };
+  });
 }
 
 export async function resetAgentPersonalInfo(input: { userId: string; agentId: string }) {

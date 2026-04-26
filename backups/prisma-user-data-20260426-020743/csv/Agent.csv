@@ -1,0 +1,25 @@
+id,userId,name,understandingScore,currentWikiId,currentProfileId,createdAt,updatedAt
+demo-agent-ai-engineer-lin,demo-user-ai-engineer-lin,林晓玲的数字分身,80,,cmoe8u8vj0001q343829zs92v,2026-04-25 11:16:00.125,2026-04-25 11:16:01.945
+demo-agent-pm-chen-siyuan,demo-user-pm-chen-siyuan,陈思远的数字分身,80,,cmoe8ubn00003q343uf3af2aw,2026-04-25 11:16:03.886,2026-04-25 11:16:04.76
+demo-agent-growth-wang-jingjing,demo-user-growth-wang-jingjing,王晶晶的数字分身,80,,cmoe8uczk0005q343ywqwip23,2026-04-25 11:16:05.654,2026-04-25 11:16:06.756
+demo-agent-designer-li-zeyan,demo-user-designer-li-zeyan,李泽言的数字分身,80,,cmoe8ueyb0007q34345xl3qhn,2026-04-25 11:16:08.115,2026-04-25 11:16:09.164
+demo-agent-investor-gao-tianyang,demo-user-investor-gao-tianyang,高天阳的数字分身,80,,cmoe8ugd50009q343zsmjx85j,2026-04-25 11:16:10.058,2026-04-25 11:16:10.884
+demo-agent-iot-zhao-yihang,demo-user-iot-zhao-yihang,赵一航的数字分身,80,,cmoe8uhp0000bq343imq2wffr,2026-04-25 11:16:11.766,2026-04-25 11:16:12.587
+demo-agent-creator-liu-yuyan,demo-user-creator-liu-yuyan,刘语嫣的数字分身,80,,cmoe8uj4b000dq343qq86gxay,2026-04-25 11:16:13.626,2026-04-25 11:16:14.585
+demo-agent-global-business-wu,demo-user-global-business-wu,吴大伟的数字分身,80,,cmoe8ukkm000fq3434q4uauwc,2026-04-25 11:16:15.479,2026-04-25 11:16:16.457
+demo-agent-enterprise-xu-jingya,demo-user-enterprise-xu-jingya,徐静雅的数字分身,80,,cmoe8umkj000hq343a70awuk9,2026-04-25 11:16:17.549,2026-04-25 11:16:18.994
+demo-agent-community-zhou-ziheng,demo-user-community-zhou-ziheng,周子衡的数字分身,80,,cmoe8unyh000jq343wuqmulbz,2026-04-25 11:16:19.869,2026-04-25 11:16:20.846
+cmoe8y5ni0002jy04s9y7chm8,cmoe8y5ms0000jy042fgp44i8,小Lin说 的数字分身,5,,cmoe8yb1l000gjy04nvl7cpwf,2026-04-25 11:19:03.198,2026-04-25 11:19:10.203
+cmoe91ap6000ojy041q42vccs,cmoe91aor000mjy04e8zbxj9r,jun7 的数字分身,5,,,2026-04-25 11:21:29.706,2026-04-25 11:21:29.706
+cmoe90v1w000jjy04u4sdoye7,cmoe90v1c000hjy04tzh67s3s,立党lidang 的数字分身,5,,cmoe91oqr001ijy04c1hwgfjp,2026-04-25 11:21:09.428,2026-04-25 11:21:47.925
+cmoe92tnf001ljy04uzr5vxop,cmoe92tmy001jjy045h9ttx5y,W 的数字分身,5,,cmoe92x94001vjy04ezg8djfk,2026-04-25 11:22:40.924,2026-04-25 11:22:45.602
+cmoe93xk9001yjy044yqcpql9,cmoe93xjs001wjy04uupa03gr,jun7 的数字分身,5,,cmoe93ztj0024jy04bt2miii3,2026-04-25 11:23:32.65,2026-04-25 11:23:35.585
+cmoe9dzkt0029jy04yetfy8p6,cmoe9dzjy0027jy04iftzlr1l,Lavine 的数字分身,5,,cmoe9eegm0035jy04b0hnhk2d,2026-04-25 11:31:21.821,2026-04-25 11:31:41.129
+cmoeap0sd0002if04q80pv239,cmoeap0rq0000if04jey0xgph,Lavine2 的数字分身,5,,cmoeap3g90006if04gwltp26a,2026-04-25 12:07:56.222,2026-04-25 12:07:59.694
+cmoedowdq0002ji044c3was87,cmoedowd30000ji04meq2h0u8,linko 的数字分身,5,,,2026-04-25 13:31:49.359,2026-04-25 13:31:49.359
+cmoeerark0002l204aq5242ws,cmoeeraqt0000l204mklaix1j,Lavine3 的数字分身,5,,cmoeerztt0014l204rgsjd83r,2026-04-25 14:01:40.928,2026-04-25 14:02:13.428
+cmoeez0ht0017l2043tq52chv,cmoeez0h50015l204plgfffa6,许人冰 的数字分身,5,,cmoef1d7k002rl204l7hcwy9b,2026-04-25 14:07:40.865,2026-04-25 14:09:30.674
+cmoegjr920002ii04fzsxjbgb,cmoegjr8h0000ii04trn05hnn,A先生 的数字分身,5,,cmoegnc860007l704555c0n3v,2026-04-25 14:51:48.279,2026-04-25 14:54:35.44
+cmoeh8cla0002ib04o68vgeqq,cmoeh8cke0000ib04j7ggorvv,B先生 的数字分身,5,,cmoeh8gph0008ib04vjbj5rle,2026-04-25 15:10:55.679,2026-04-25 15:11:01.037
+cmoeemhrv0002l204nyfupqgf,cmoeemhrd0000l20405yxh07k,guojunqi 的数字分身,5,,cmoeit8cu000fl704aw0yopf8,2026-04-25 13:57:56.732,2026-04-25 15:55:09.603
+demo-agent-jun,demo-user-jun,张明远的数字分身,36,,,2026-04-25 11:15:58.615,2026-04-25 11:15:58.615

@@ -1,9 +1,10 @@
 'use client';
 
-import { ChangeEvent, ReactNode, useMemo, useRef, useState, useEffect } from 'react';
+import { ChangeEvent, DragEvent, ReactNode, TouchEvent, useMemo, useRef, useState, useEffect } from 'react';
 
-type FlowStep = 'home' | 'input' | 'generating' | 'card' | 'share' | 'find' | 'searching' | 'matches' | 'candidate' | 'icebreaker';
+type FlowStep = 'home' | 'input' | 'generating' | 'card' | 'edit' | 'share' | 'find' | 'searching' | 'matches' | 'candidate' | 'icebreaker';
 type InputMode = 'text' | 'file' | 'link' | 'chat';
+type EditTab = 'basic' | 'profile' | 'goals';
 
 type ApiResponse<T> = {
   ok: boolean;
@@ -65,6 +66,10 @@ type ResetPersonalInfoResponse = {
   contact: string;
 };
 
+type UpdateProfileResponse = GeneratedAgentResponse & {
+  contact: string;
+};
+
 type ParsedDocumentResponse = {
   fileName: string;
   fileType: string;
@@ -72,12 +77,25 @@ type ParsedDocumentResponse = {
 };
 
 type EvolutionChatResponse = ConversationMessage;
+type CreationProfileSlot = 'identity' | 'currentFocus' | 'projects' | 'skills' | 'offers' | 'wants';
+type CreationDraftProfile = Partial<Record<CreationProfileSlot, string>>;
+
+type CreationChatResponse = ConversationMessage & {
+  readiness: 'low' | 'medium' | 'ready';
+  filledSlots: CreationProfileSlot[];
+  missingSlots: CreationProfileSlot[];
+  nextBestQuestion: string;
+  suggestedReplies: string[];
+  nextAction: 'ask_more' | 'suggest_generate';
+  draftProfile: CreationDraftProfile;
+};
 
 type RecommendationItem = {
   profile: AgentProfile;
   score: number;
   reason: string;
   topic?: string;
+  contactHandle?: string;
 };
 
 type CandidateView = {
@@ -91,6 +109,7 @@ type CandidateView = {
   reason: string;
   offer: string;
   topic: string;
+  contactHandle: string;
 };
 
 type ConversationMessage = {
@@ -106,13 +125,14 @@ const findPromptTemplate = `我想认识：
 我能提供什么：
 希望下一步：`;
 
-const creationChatQuestions = [
-  '你现在主要在做什么？',
-  '你最擅长的能力是什么？',
-  '做过哪些代表项目？',
-  '你能为别人提供什么？',
-  '你现在最想认识谁？'
-];
+const creationSlotLabels: Record<CreationProfileSlot, string> = {
+  identity: '我是谁',
+  currentFocus: '现在做什么',
+  projects: '代表项目',
+  skills: '擅长能力',
+  offers: '我能提供',
+  wants: '我想找谁'
+};
 
 const agentTraceMessages = [
   {
@@ -193,6 +213,13 @@ function firstLetter(value: string) {
   return (value.trim()[0] || 'A').toUpperCase();
 }
 
+function splitEditableList(value: string) {
+  return value
+    .split(/[\n，,]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 function profileDisplayName(profile: AgentProfile) {
   return profile.user?.displayName || profile.headline.split('·')[0]?.trim() || profile.headline;
 }
@@ -213,7 +240,8 @@ function profileToCandidate(item: RecommendationItem): CandidateView {
     score: Math.max(item.score, 60),
     reason: item.reason,
     offer: offers.join('、') || item.profile.bio,
-    topic: item.topic || icebreakers[0] || '围绕彼此的能力、需求和合作场景展开交流'
+    topic: item.topic || icebreakers[0] || '围绕彼此的能力、需求和合作场景展开交流',
+    contactHandle: item.contactHandle?.trim() || ''
   };
 }
 
@@ -248,7 +276,7 @@ export function AgentCreator() {
   const [contact, setContact] = useState('');
   const [contactError, setContactError] = useState('');
   const [isLaunching, setIsLaunching] = useState(false);
-  const [mode, setMode] = useState<InputMode>('text');
+  const [mode, setMode] = useState<InputMode>('chat');
   const [pasteText, setPasteText] = useState('');
   const [fileName, setFileName] = useState('');
   const [fileText, setFileText] = useState('');
@@ -258,6 +286,10 @@ export function AgentCreator() {
   const [creationConversation, setCreationConversation] = useState<ConversationMessage[]>([
     { role: 'assistant', content: '如果你不知道怎么写，我可以问你几个问题，再整理成生成资料。' }
   ]);
+  const [creationChatState, setCreationChatState] = useState<CreationChatResponse | null>(null);
+  const [isCreationChatting, setIsCreationChatting] = useState(false);
+  const [showCreationDraft, setShowCreationDraft] = useState(true);
+  const [isCreationWorkspaceOpen, setIsCreationWorkspaceOpen] = useState(false);
   const [evolutionDraft, setEvolutionDraft] = useState('');
   const [evolutionFileName, setEvolutionFileName] = useState('');
   const [evolutionFileText, setEvolutionFileText] = useState('');
@@ -273,9 +305,28 @@ export function AgentCreator() {
   const [findQuery, setFindQuery] = useState('');
   const [error, setError] = useState('');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isResettingPersonalInfo, setIsResettingPersonalInfo] = useState(false);
+  const [editTab, setEditTab] = useState<EditTab>('basic');
+  const [editNickname, setEditNickname] = useState('');
+  const [editContact, setEditContact] = useState('');
+  const [editHeadline, setEditHeadline] = useState('');
+  const [editBio, setEditBio] = useState('');
+  const [editTags, setEditTags] = useState<string[]>([]);
+  const [editTagDraft, setEditTagDraft] = useState('');
+  const [draggedEditTagIndex, setDraggedEditTagIndex] = useState<number | null>(null);
+  const [editRecentUpdatesText, setEditRecentUpdatesText] = useState('');
+  const [editLinkStyleTitle, setEditLinkStyleTitle] = useState('');
+  const [editLinkStyleDescription, setEditLinkStyleDescription] = useState('');
+  const [editHighlightsText, setEditHighlightsText] = useState('');
+  const [editDomainsText, setEditDomainsText] = useState('');
+  const [editOffersText, setEditOffersText] = useState('');
+  const [editWantsText, setEditWantsText] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isBooting, setIsBooting] = useState(true);
   const evolutionThreadEndRef = useRef<HTMLDivElement | null>(null);
+  const candidateContentRef = useRef<HTMLDivElement | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const profile = generated?.profile;
   const tags = parseJsonList(profile?.tagsJson);
@@ -299,6 +350,31 @@ export function AgentCreator() {
   const contactHandle = contact.trim() || (nickname.trim() ? `@${nickname.trim()}` : `ID ${profile?.slug ?? 'agent'}`);
   const sparseProfileHint = '资料还不够，继续补充后再生成';
   const hasGenerated = Boolean(generated);
+  const creationChatCompleteness = creationChatState ? `${creationChatState.filledSlots.length}/6` : '0/6';
+  const creationMissingLabels = creationChatState?.missingSlots.map((slot) => creationSlotLabels[slot]) ?? [];
+  const creationDraftStatus = creationChatState
+    ? creationChatState.nextAction === 'suggest_generate'
+      ? '可以生成'
+      : `还差 ${creationMissingLabels.length} 项`
+    : '还未开始';
+  const creationDraftRows = [
+    {
+      label: '身份',
+      value: creationChatState?.draftProfile.identity || '等待确认你是谁'
+    },
+    {
+      label: '方向',
+      value: creationChatState?.draftProfile.currentFocus || creationChatState?.draftProfile.projects || '等待补充现在在做什么'
+    },
+    {
+      label: '能力',
+      value: creationChatState?.draftProfile.skills || creationChatState?.draftProfile.offers || '等待补充擅长什么'
+    },
+    {
+      label: '缺口',
+      value: creationMissingLabels.length > 0 ? `还差 ${creationMissingLabels.join('、')}` : creationChatState ? '资料已足够生成第一版' : '身份、项目、能力、需求'
+    }
+  ];
   const agentInputCopy = hasGenerated
     ? {
         pill: '进化分身 · AI 对话主入口',
@@ -310,8 +386,12 @@ export function AgentCreator() {
         description: '没有分身时，先用文本、附件、链接或 AI 对话补充资料，生成你的第一个数字分身。',
         submit: '生成我的分身'
       };
-  const showBottomNav = hasGenerated && step !== 'home' && step !== 'generating' && step !== 'searching';
+  const showBottomNav = hasGenerated && step !== 'home' && step !== 'generating' && step !== 'searching' && step !== 'edit';
   const isSelectedConnectionRecorded = Boolean(selectedCandidate && recordedConnectionIds.includes(selectedCandidate.id));
+  const selectedCandidateIndex = selectedCandidate ? recommendations.findIndex((candidate) => candidate.id === selectedCandidate.id) : -1;
+  const nextCandidate = selectedCandidateIndex >= 0 ? recommendations[selectedCandidateIndex + 1] : undefined;
+  const hasCandidateBrowsing = recommendations.length > 1;
+  const creationSubmitText = mode === 'chat' && creationChatState?.readiness === 'ready' ? '资料已足够，生成第一版' : agentInputCopy.submit;
   const activeText = useMemo(() => {
     if (mode === 'file') return fileText || (fileName ? `用户上传了文件：${fileName}` : '');
     if (mode === 'link') return linkText;
@@ -367,7 +447,7 @@ export function AgentCreator() {
     const trimmedNickname = nickname.trim();
     const trimmedContact = contact.trim();
     if (!trimmedNickname) {
-      setNicknameError('先填写昵称，再生成你的 Agent。');
+      setNicknameError('先填写昵称，再生成你的数字分身。');
       return;
     }
     if (!trimmedContact) {
@@ -438,20 +518,33 @@ export function AgentCreator() {
     }
   };
 
-  const answerCreationQuestion = (question: string) => {
-    setMode('chat');
-    setCreationConversation((messages) => [...messages, { role: 'assistant', content: question }]);
-  };
+  const sendCreationChat = async (draft: string = chatDraft) => {
+    const content = draft.trim();
+    if (!content || isCreationChatting) return;
 
-  const sendCreationChat = () => {
-    const content = chatDraft.trim();
-    if (!content) return;
-    setCreationConversation((messages) => [
-      ...messages,
-      { role: 'user', content },
-      { role: 'assistant', content: '收到，我会把这段信息纳入首次分身生成资料。你可以继续补充，或直接生成。' }
-    ]);
+    const history = creationConversation;
+    const userMessage: ConversationMessage = { role: 'user', content };
+    setCreationConversation([...history, userMessage]);
     setChatDraft('');
+    setError('');
+    setIsCreationChatting(true);
+
+    try {
+      const assistantMessage = await readApi<CreationChatResponse>('/api/agents/creation-chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          displayName: nickname.trim() || '新用户',
+          message: content,
+          conversation: history
+        })
+      });
+      setCreationChatState(assistantMessage);
+      setCreationConversation([...history, userMessage, assistantMessage]);
+    } catch (chatError) {
+      setError(chatError instanceof Error ? chatError.message : 'AI 对话失败');
+    } finally {
+      setIsCreationChatting(false);
+    }
   };
 
   const chatEvolution = async (content: string = evolutionDraft) => {
@@ -488,7 +581,7 @@ export function AgentCreator() {
     const trimmedNickname = nickname.trim();
     const trimmedContact = contact.trim();
     if (!trimmedNickname) {
-      setNicknameError('先填写昵称，再生成你的 Agent。');
+      setNicknameError('先填写昵称，再生成你的数字分身。');
       setShowNameModal(true);
       return;
     }
@@ -577,6 +670,36 @@ export function AgentCreator() {
     }
   };
 
+  const showNextCandidate = () => {
+    if (!nextCandidate) {
+      setStep('matches');
+      return;
+    }
+
+    setSelectedCandidate(nextCandidate);
+    setConnectionFeedback('');
+    candidateContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCandidateTouchStart = (event: TouchEvent<HTMLElement>) => {
+    const touch = event.touches[0];
+    if (!touch) return;
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleCandidateTouchEnd = (event: TouchEvent<HTMLElement>) => {
+    const start = touchStartRef.current;
+    const touch = event.changedTouches[0];
+    touchStartRef.current = null;
+    if (!start || !touch || !nextCandidate) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    if (deltaX < -60 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+      showNextCandidate();
+    }
+  };
+
   const createConnection = async () => {
     if (!generated || !selectedCandidate) return;
     const message = buildIcebreaker(nickname, selectedCandidate, offers);
@@ -600,16 +723,132 @@ export function AgentCreator() {
     }
   };
 
-  const copyProfileContact = () => {
-    const profileLine = profile?.headline ? `${contactHandle} · ${profile.headline}` : contactHandle;
-    void navigator.clipboard?.writeText(profileLine);
+  const openProfileEditor = () => {
+    if (!profile) return;
+
+    setEditTab('basic');
+    setEditNickname(nickname.trim());
+    setEditContact(contact.trim());
+    setEditHeadline(profile.headline);
+    setEditBio(profile.bio);
+    setEditTags(tags);
+    setEditTagDraft('');
+    setEditRecentUpdatesText(recentUpdates.join('\n'));
+    setEditLinkStyleTitle(persona.title ?? tags[0] ?? '');
+    setEditLinkStyleDescription(persona.description ?? '');
+    setEditHighlightsText(profileHighlights.join('\n'));
+    setEditDomainsText(profileDomains.join('，'));
+    setEditOffersText(offers.join('，'));
+    setEditWantsText(profileNeeds.join('，'));
+    setShowProfileMenu(false);
+    setStep('edit');
+  };
+
+  const addEditTag = () => {
+    const nextTag = editTagDraft.trim();
+    if (!nextTag || editTags.includes(nextTag)) return;
+    setEditTags((current) => [...current, nextTag]);
+    setEditTagDraft('');
+  };
+
+  const removeEditTag = (tagToRemove: string) => {
+    setEditTags((current) => current.filter((tag) => tag !== tagToRemove));
+  };
+
+  const reorderEditTags = (fromIndex: number | null, toIndex: number) => {
+    if (fromIndex === null || fromIndex === toIndex) return;
+
+    setEditTags((current) => {
+      if (fromIndex < 0 || fromIndex >= current.length || toIndex < 0 || toIndex >= current.length) return current;
+
+      const nextTags = [...current];
+      const [tag] = nextTags.splice(fromIndex, 1);
+      if (!tag) return current;
+      nextTags.splice(toIndex, 0, tag);
+      return nextTags;
+    });
+  };
+
+  const startEditTagDrag = (event: DragEvent<HTMLDivElement>, index: number) => {
+    event.dataTransfer.effectAllowed = 'move';
+    setDraggedEditTagIndex(index);
+  };
+
+  const saveProfileEdits = async () => {
+    if (!generated || !profile || isSavingProfile) return;
+
+    const nextNickname = editNickname.trim() || nickname.trim();
+    const nextContact = editContact.trim() || contact.trim();
+    const nextTags = editTags.map((tag) => tag.trim()).filter(Boolean);
+    const nextOffers = splitEditableList(editOffersText);
+    const nextWants = splitEditableList(editWantsText);
+    const nextRecentUpdates = splitEditableList(editRecentUpdatesText);
+    const nextHighlights = splitEditableList(editHighlightsText);
+    const nextDomains = splitEditableList(editDomainsText).map((domain) => ({ name: domain, evidence: '手动编辑' }));
+    const nextPersona = {
+      title: editLinkStyleTitle.trim(),
+      description: editLinkStyleDescription.trim(),
+      confidence: persona.confidence ?? 1
+    };
+    const nextAnalysis: ProfileAnalysis = {
+      ...analysis,
+      recentUpdates: nextRecentUpdates,
+      careerHighlights: nextHighlights,
+      domainSignals: nextDomains,
+      persona: nextPersona.title || nextPersona.description ? nextPersona : {},
+      needs: nextWants
+    };
+
+    setError('');
+    setIsSavingProfile(true);
+
+    try {
+      const data = await readApi<UpdateProfileResponse>(`/api/agents/${generated.agent.id}/profile`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          userId: generated.user.id,
+          profileId: profile.id,
+          displayName: nextNickname,
+          contact: nextContact,
+          headline: editHeadline.trim() || profile.headline,
+          bio: editBio.trim() || profile.bio,
+          tags: nextTags,
+          offers: nextOffers,
+          wants: nextWants,
+          analysis: nextAnalysis
+        })
+      });
+
+      setNickname(data.user.displayName);
+      setContact(data.contact);
+      setGenerated({
+        user: data.user,
+        agent: data.agent,
+        profile: data.profile
+      });
+      setResidentProfiles((profiles) => [data.profile, ...profiles.filter((item) => item.id !== data.profile.id)]);
+      setStep('card');
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : '保存失败');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const copyCandidateContact = (candidate: CandidateView) => {
+    if (!candidate.contactHandle) return;
+    void navigator.clipboard?.writeText(candidate.contactHandle);
+    setConnectionFeedback('已复制对方联系方式。');
+  };
+
+  const openResetConfirm = () => {
+    setShowProfileMenu(false);
+    setError('');
+    setShowResetConfirm(true);
   };
 
   const resetPersonalInfo = async () => {
     if (!generated || isResettingPersonalInfo) return;
-
-    const confirmed = window.confirm('确认清空个人资料？会保留昵称和联系方式，删除已生成名片、素材、分析和匹配记录。');
-    if (!confirmed) return;
 
     setError('');
     setIsResettingPersonalInfo(true);
@@ -630,6 +869,10 @@ export function AgentCreator() {
       setLinkText('');
       setChatDraft('');
       setCreationConversation([{ role: 'assistant', content: '如果你不知道怎么写，我可以问你几个问题，再整理成生成资料。' }]);
+      setCreationChatState(null);
+      setShowCreationDraft(true);
+      setIsCreationWorkspaceOpen(false);
+      setMode('chat');
       setEvolutionDraft('');
       setEvolutionFileName('');
       setEvolutionFileText('');
@@ -642,6 +885,7 @@ export function AgentCreator() {
       setFindQuery('');
       setResidentProfiles((profiles) => profiles.filter((item) => item.agentId !== generated.agent.id));
       setShowProfileMenu(false);
+      setShowResetConfirm(false);
       setStep('input');
     } catch (resetError) {
       setError(resetError instanceof Error ? resetError.message : '清空资料失败');
@@ -650,6 +894,60 @@ export function AgentCreator() {
     }
   };
 
+  const openCreationWorkspace = (nextMode: InputMode = mode) => {
+    setMode(nextMode);
+    setIsCreationWorkspaceOpen(true);
+  };
+
+  const creationChatWorkspace = (
+    <div className="creation-chat-panel creation-chat-workspace">
+      <div className="creation-chat-kicker">边聊边生成草稿</div>
+      <div className="mini-chat creation-thread">
+        {creationConversation.map((message, index) => (
+          <div className={`mini-bubble ${message.role}`} key={`${message.role}-${index}`}>
+            {message.content}
+          </div>
+        ))}
+        {isCreationChatting && <div className="mini-bubble assistant">思考中...</div>}
+      </div>
+      <div className={`creation-live-draft ${showCreationDraft ? 'open' : ''}`}>
+        <button
+          className="creation-live-draft-toggle"
+          type="button"
+          aria-expanded={showCreationDraft}
+          onClick={() => setShowCreationDraft((current) => !current)}
+        >
+          <b>实时分身草稿</b>
+          <span>{showCreationDraft ? '收起' : '展开'}</span>
+        </button>
+        {showCreationDraft && (
+          <div className="creation-live-draft-body">
+            {creationDraftRows.map((row) => (
+              <div className="creation-draft-row" key={row.label}>
+                <span>{row.label}</span>
+                <b>{row.value}</b>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      {creationChatState && !showCreationDraft && (
+        <div className={`creation-chat-guidance ${creationChatState.readiness}`}>
+          <div className="creation-chat-progress">
+            <span>资料完整度 {creationChatCompleteness}</span>
+            <b>{creationDraftStatus}</b>
+          </div>
+        </div>
+      )}
+      <div className="chat-composer">
+        <input value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} placeholder="回答 AI 的问题，或随便说一段..." disabled={isCreationChatting} />
+        <button onClick={() => void sendCreationChat()} disabled={isCreationChatting}>
+          {isCreationChatting ? '思考中' : '发送'}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <main className={`app-shell step-${step}`}>
       <div className="phone">
@@ -657,18 +955,34 @@ export function AgentCreator() {
           {isLaunching && (
             <div className="launch-transition" aria-live="polite">
               <span>{nickname ? firstLetter(nickname) : '你'}</span>
-              <b>正在打开你的 Agent 工作台</b>
+              <b>正在打开你的数字分身</b>
+            </div>
+          )}
+          {showResetConfirm && (
+            <div className="reset-confirm-backdrop" role="dialog" aria-modal="true" aria-labelledby="reset-confirm-title">
+              <div className="reset-confirm-card">
+                <b id="reset-confirm-title">确认清空个人资料？</b>
+                <span>会删除已生成名片、素材、分析和匹配记录，但保留昵称和联系方式。</span>
+                <div className="reset-confirm-actions">
+                  <button type="button" onClick={() => setShowResetConfirm(false)} disabled={isResettingPersonalInfo}>
+                    取消
+                  </button>
+                  <button type="button" className="danger" onClick={resetPersonalInfo} disabled={isResettingPersonalInfo}>
+                    {isResettingPersonalInfo ? '正在清空' : '确认清空'}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
           {isBooting && (
-            <section className="generating-screen">
-              <div className="content">
+            <section className="boot-screen generating-screen">
+              <div className="boot-content">
                 <h2 className="page-title">
-                  正在恢复
+                  正在进入
                   <br />
-                  <mark>你的 Agent</mark>
+                  <mark>Livelink</mark>
                 </h2>
-                <p className="muted light">如果你之前生成过 Agent，我们会自动带你回到名片页。</p>
+                <p className="muted light">正在同步你的入口状态。</p>
               </div>
             </section>
           )}
@@ -687,13 +1001,13 @@ export function AgentCreator() {
                   <h1>
                     生成
                     <br />
-                    <mark>我的 Agent</mark>
+                    <mark>我的数字分身</mark>
                   </h1>
                   <p>让 AI 先理解你是谁、能提供什么、正在寻找什么。</p>
                 </div>
                 <div className="home-center-action">
                   <button className="primary-action" onClick={startCreate}>
-                    生成我的 Agent
+                    生成我的数字分身
                   </button>
                 </div>
                 <div className="scroll-cue" aria-hidden="true">
@@ -704,7 +1018,7 @@ export function AgentCreator() {
               {showNameModal && (
                 <div className="modal-backdrop">
                   <div className="name-modal">
-                    <h2>先给 Agent 一个名字</h2>
+                    <h2>先给数字分身一个名字</h2>
                     <p>我们会用这个昵称生成你的数字分身，后面可以随时修改。</p>
                     <label className="text-field">
                       <span>你的昵称</span>
@@ -732,7 +1046,7 @@ export function AgentCreator() {
                     </label>
                     {contactError && <p className="field-error">{contactError}</p>}
                     <button className="primary-action lime" onClick={confirmName} disabled={!nickname.trim() || !contact.trim()}>
-                      确认生成
+                      确认创建
                     </button>
                   </div>
                 </div>
@@ -741,7 +1055,7 @@ export function AgentCreator() {
           )}
 
           {step === 'input' && (
-            <section className={hasGenerated ? 'input-screen evolution-screen' : 'input-screen'}>
+            <section className={hasGenerated ? 'input-screen evolution-screen' : isCreationWorkspaceOpen && mode === 'chat' ? 'input-screen creation-chat-screen' : 'input-screen'}>
               {hasGenerated && profile ? (
                 <>
                   <Header title="进化分身" action="↗" />
@@ -791,33 +1105,73 @@ export function AgentCreator() {
                     </div>
                   </div>
                 </>
+              ) : isCreationWorkspaceOpen && mode === 'chat' ? (
+                <>
+                  <Header title="AI 创建中" action={creationChatCompleteness} />
+                  <div className="content creation-chat-content">
+                    {error && <p className="error-text">{error}</p>}
+                    {creationChatWorkspace}
+                    <div className="sticky-actions">
+                      <button className="primary-action" onClick={generateAgent}>
+                        {creationSubmitText}
+                      </button>
+                    </div>
+                  </div>
+                </>
               ) : (
                 <>
                   <Header title={`Hi, ${nickname || '你好'}`} action="?" />
                   <div className="content">
                     <Pill>{agentInputCopy.pill}</Pill>
-                    <h2 className="page-title">
-                      创建你的
-                      <br />
-                      <mark>AI 分身</mark>
-                    </h2>
-                    <p className="muted">{agentInputCopy.description}</p>
+                    {isCreationWorkspaceOpen ? (
+                      <div className="creation-workspace-heading">
+                        <b>AI 创建中</b>
+                        <span>边聊边整理资料，生成按钮会使用当前对话和草稿。</span>
+                      </div>
+                    ) : (
+                      <>
+                        <h2 className="page-title">
+                          创建你的
+                          <br />
+                          <mark>AI 分身</mark>
+                        </h2>
+                        <p className="muted">{agentInputCopy.description}</p>
+                      </>
+                    )}
                     {error && <p className="error-text">{error}</p>}
-                    <div className="mode-tabs">
-                      <button className={mode === 'text' ? 'active' : ''} onClick={() => setMode('text')}>
-                        粘贴文本
+                    {!isCreationWorkspaceOpen && (
+                    <div className="creation-source-flow" aria-label="选择资料入口">
+                      <button className={`creation-source-card ai ${mode === 'chat' ? 'active' : ''}`} type="button" onClick={() => openCreationWorkspace('chat')}>
+                        <span className="source-icon swap" aria-hidden="true">↔</span>
+                        <span>
+                          <b>和 AI 聊聊</b>
+                          <small>不知道怎么写时，从这里开始。AI 会追问身份、项目、能力、需求。</small>
+                        </span>
                       </button>
-                      <button className={mode === 'file' ? 'active' : ''} onClick={() => setMode('file')}>
-                        上传附件
+                      <button className={`creation-source-card ${mode === 'text' ? 'active' : ''}`} type="button" onClick={() => openCreationWorkspace('text')}>
+                        <span>
+                          <b>粘贴文本</b>
+                          <small>已有介绍、履历或项目说明</small>
+                        </span>
+                        <span className="source-icon clipboard" aria-hidden="true" />
                       </button>
-                      <button className={mode === 'link' ? 'active' : ''} onClick={() => setMode('link')}>
-                        上传链接
+                      <button className={`creation-source-card file ${mode === 'file' ? 'active' : ''}`} type="button" onClick={() => openCreationWorkspace('file')}>
+                        <span>
+                          <b>上传附件</b>
+                          <small>PDF / Word / Markdown</small>
+                        </span>
+                        <span className="source-icon plus" aria-hidden="true">+</span>
                       </button>
-                      <button className={mode === 'chat' ? 'active' : ''} onClick={() => setMode('chat')}>
-                        AI 对话
+                      <button className={`creation-source-card link ${mode === 'link' ? 'active' : ''}`} type="button" onClick={() => openCreationWorkspace('link')}>
+                        <span>
+                          <b>导入链接</b>
+                          <small>GitHub / 博客 / 作品集</small>
+                        </span>
+                        <span className="source-icon arrow" aria-hidden="true">↗</span>
                       </button>
                     </div>
-                    {mode === 'text' && (
+                    )}
+                    {isCreationWorkspaceOpen && mode === 'text' && (
                       <div className="paste-panel creation-panel">
                         <b>直接粘贴文本</b>
                         <textarea value={pasteText} onChange={(event) => setPasteText(event.target.value)} placeholder="粘贴你的介绍、经历、项目、能力、需求..." />
@@ -828,7 +1182,7 @@ export function AgentCreator() {
                         </div>
                       </div>
                     )}
-                    {mode === 'file' && (
+                    {isCreationWorkspaceOpen && mode === 'file' && (
                       <div className="upload-panel creation-panel">
                         <div className="file-card">{fileName.toLowerCase().endsWith('.docx') ? 'DOC' : 'PDF'}</div>
                         <b>{fileName || '上传附件'}</b>
@@ -839,41 +1193,20 @@ export function AgentCreator() {
                         <label htmlFor="resume-upload">{fileText ? '重新选择文件' : '选择文件'}</label>
                       </div>
                     )}
-                    {mode === 'link' && (
+                    {isCreationWorkspaceOpen && mode === 'link' && (
                       <div className="link-panel creation-panel">
                         <b>上传链接</b>
                         <span>支持 GitHub、博客、作品集、小红书、B站等公开页面。每行一个链接。</span>
                         <textarea value={linkText} onChange={(event) => setLinkText(event.target.value)} placeholder="https://github.com/your/project" />
                       </div>
                     )}
-                    {mode === 'chat' && (
-                      <div className="creation-chat-panel">
-                        <b>和 AI 聊几句</b>
-                        <div className="mini-chat">
-                          {creationConversation.map((message, index) => (
-                            <div className={`mini-bubble ${message.role}`} key={`${message.role}-${index}`}>
-                              {message.content}
-                            </div>
-                          ))}
-                        </div>
-                        <div className="quick-prompts">
-                          {creationChatQuestions.map((question) => (
-                            <button key={question} onClick={() => answerCreationQuestion(question)}>
-                              {question}
-                            </button>
-                          ))}
-                        </div>
-                        <div className="chat-composer">
-                          <input value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} placeholder="回答 AI 的问题，或随便说一段..." />
-                          <button onClick={sendCreationChat}>发送</button>
-                        </div>
+                    {isCreationWorkspaceOpen && (
+                      <div className="sticky-actions">
+                        <button className="primary-action" onClick={generateAgent}>
+                          {creationSubmitText}
+                        </button>
                       </div>
                     )}
-                    <div className="sticky-actions">
-                      <button className="primary-action" onClick={generateAgent}>
-                        {agentInputCopy.submit}
-                      </button>
-                    </div>
                   </div>
                 </>
               )}
@@ -926,7 +1259,7 @@ export function AgentCreator() {
           {step === 'card' && profile && (
             <section className="card-screen">
               <Header
-                title="我的Agent"
+                title="我的数字分身"
                 action={
                   <button
                     className="round-icon profile-menu-trigger"
@@ -941,8 +1274,17 @@ export function AgentCreator() {
               />
               {showProfileMenu && (
                 <div className="profile-menu" role="menu">
-                  <button type="button" role="menuitem" onClick={resetPersonalInfo} disabled={isResettingPersonalInfo}>
-                    <b>{isResettingPersonalInfo ? '正在清空' : '清空资料'}</b>
+                  <button type="button" role="menuitem" onClick={openProfileEditor}>
+                    <b>编辑资料</b>
+                    <span>更新分身主页内容</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={openResetConfirm}
+                    disabled={isResettingPersonalInfo}
+                  >
+                    <b>清空资料</b>
                     <span>保留昵称和联系方式</span>
                   </button>
                 </div>
@@ -952,8 +1294,10 @@ export function AgentCreator() {
                   <div className="profile-identity">
                     <div className="avatar">{firstLetter(nickname)}</div>
                     <div className="profile-main">
-                      <span className="profile-kicker">这是你的数字分身</span>
-                      <h3>{nickname || profile.headline.split('·')[0]?.trim() || '我的分身'}</h3>
+                      <div className="profile-name-line">
+                        <h3>{nickname || profile.headline.split('·')[0]?.trim() || '我的分身'}</h3>
+                        <span className="profile-contact-inline">{contactHandle}</span>
+                      </div>
                       <p>{profile.headline}</p>
                     </div>
                   </div>
@@ -962,11 +1306,6 @@ export function AgentCreator() {
                     {tags.slice(0, 6).map((tag) => (
                       <span key={tag}>{tag}</span>
                     ))}
-                  </div>
-                  <div className="profile-actions">
-                    <span className="profile-handle">{contactHandle}</span>
-                    <button type="button" onClick={copyProfileContact}>复制微信/手机</button>
-                    <button type="button" onClick={() => setStep('share')}>联系分身</button>
                   </div>
                 </div>
 
@@ -981,6 +1320,17 @@ export function AgentCreator() {
                       <span>{recentUpdates[1] || profileDomains.slice(0, 3).join('、') || sparseProfileHint}</span>
                     </div>
                   </div>
+                </ProfileSection>
+
+                <ProfileSection eyebrow="LINK" title="link风格">
+                  {hasPersonaSignals ? (
+                    <div className="link-style-card">
+                      <b>{persona.title ?? tags[0] ?? '待确认的连接风格'}</b>
+                      <span>{persona.description ?? '还没有足够资料生成稳定的连接风格。'}</span>
+                    </div>
+                  ) : (
+                    <div className="profile-empty">{sparseProfileHint}</div>
+                  )}
                 </ProfileSection>
 
                 <ProfileSection eyebrow="HIGHLIGHTS" title="履历亮点">
@@ -1012,35 +1362,169 @@ export function AgentCreator() {
                   </div>
                 </ProfileSection>
 
-                <ProfileSection eyebrow="PERSONA" title="人格兽">
-                  {hasPersonaSignals ? (
-                    <div className="persona-beast">
-                      <div className="beast-mark">{firstLetter(nickname)}</div>
-                      <div>
-                        <b>{persona.title ?? tags[0] ?? '待确认的人格线索'}</b>
-                        <span>{persona.description ?? icebreakers[0] ?? '还没有足够资料生成稳定的人格描述。'}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="profile-empty">{sparseProfileHint}</div>
-                  )}
-                </ProfileSection>
-
-                <ProfileSection eyebrow="NEEDS" title="最近需求">
-                  <div className="need-card">
-                    <b>我最近想找</b>
-                    <span>{profileNeeds.join('、') || sparseProfileHint}</span>
-                  </div>
-                  {icebreakers.length > 0 && <div className="icebreaker-strip">{icebreakers.join('、')}</div>}
-                </ProfileSection>
-
                 <div className="summary-card compact">
                   <SummaryRow title="我能提供">{offers.join('、') || sparseProfileHint}</SummaryRow>
                   <SummaryRow title="我正在寻找">{profileNeeds.join('、') || sparseProfileHint}</SummaryRow>
                 </div>
-                <div className="sticky-actions">
+                <div className="sticky-actions profile-sticky-cta">
                   <button className="primary-action lime" onClick={() => setStep('find')}>
                     让 Agent 帮我找人
+                  </button>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {step === 'edit' && profile && (
+            <section className="edit-profile-screen">
+              <Header
+                title="编辑数字分身"
+                action={
+                  <button className="round-icon" type="button" aria-label="返回数字分身" onClick={() => setStep('card')}>
+                    ←
+                  </button>
+                }
+              />
+              <div className="content edit-profile-content">
+                <div className="edit-tabs" role="tablist" aria-label="编辑分组">
+                  <button className={editTab === 'basic' ? 'active' : ''} type="button" onClick={() => setEditTab('basic')}>
+                    基础
+                  </button>
+                  <button className={editTab === 'profile' ? 'active' : ''} type="button" onClick={() => setEditTab('profile')}>
+                    画像
+                  </button>
+                  <button className={editTab === 'goals' ? 'active' : ''} type="button" onClick={() => setEditTab('goals')}>
+                    目标
+                  </button>
+                </div>
+
+                {editTab === 'basic' && (
+                  <section className="edit-panel">
+                    <div className="edit-panel-title">
+                      <h3>基础资料</h3>
+                      <span>BASIC</span>
+                    </div>
+                    <label className="edit-field">
+                      <b>昵称</b>
+                      <input value={editNickname} onChange={(event) => setEditNickname(event.target.value)} />
+                    </label>
+                    <label className="edit-field">
+                      <b>联系方式</b>
+                      <input value={editContact} onChange={(event) => setEditContact(event.target.value)} />
+                    </label>
+                    <label className="edit-field">
+                      <b>一句话简介</b>
+                      <textarea value={editHeadline} onChange={(event) => setEditHeadline(event.target.value)} />
+                    </label>
+                    <label className="edit-field">
+                      <b>自我介绍</b>
+                      <textarea value={editBio} onChange={(event) => setEditBio(event.target.value)} />
+                    </label>
+                    <div className="edit-field">
+                      <b>标签</b>
+                      <div className="edit-tag-editor">
+                        <div className="edit-tag-list">
+                          {editTags.map((tag, index) => (
+                            <div
+                              className={`edit-tag-chip ${draggedEditTagIndex === index ? 'is-dragging' : ''}`}
+                              key={tag}
+                              draggable
+                              onDragStart={(event) => startEditTagDrag(event, index)}
+                              onDragOver={(event) => event.preventDefault()}
+                              onDrop={(event) => {
+                                event.preventDefault();
+                                reorderEditTags(draggedEditTagIndex, index);
+                                setDraggedEditTagIndex(null);
+                              }}
+                              onDragEnd={() => setDraggedEditTagIndex(null)}
+                            >
+                              <span>{tag}</span>
+                              <button type="button" aria-label={`删除标签 ${tag}`} onClick={() => removeEditTag(tag)}>
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="edit-tag-add">
+                          <input
+                            aria-label="新标签"
+                            value={editTagDraft}
+                            onChange={(event) => setEditTagDraft(event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter') {
+                                event.preventDefault();
+                                addEditTag();
+                              }
+                            }}
+                          />
+                          <button type="button" onClick={addEditTag} disabled={!editTagDraft.trim()}>
+                            添加
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                )}
+
+                {editTab === 'profile' && (
+                  <section className="edit-panel">
+                    <div className="edit-panel-title">
+                      <h3>画像内容</h3>
+                      <span>PROFILE</span>
+                    </div>
+                    <label className="edit-field">
+                      <b>近况流</b>
+                      <textarea value={editRecentUpdatesText} onChange={(event) => setEditRecentUpdatesText(event.target.value)} />
+                    </label>
+                    <label className="edit-field">
+                      <b>link风格</b>
+                      <input value={editLinkStyleTitle} onChange={(event) => setEditLinkStyleTitle(event.target.value)} />
+                    </label>
+                    <label className="edit-field">
+                      <b>link风格描述</b>
+                      <textarea value={editLinkStyleDescription} onChange={(event) => setEditLinkStyleDescription(event.target.value)} />
+                    </label>
+                    <label className="edit-field">
+                      <b>履历亮点</b>
+                      <textarea value={editHighlightsText} onChange={(event) => setEditHighlightsText(event.target.value)} />
+                    </label>
+                    <label className="edit-field">
+                      <b>领域画像</b>
+                      <input value={editDomainsText} onChange={(event) => setEditDomainsText(event.target.value)} />
+                    </label>
+                  </section>
+                )}
+
+                {editTab === 'goals' && (
+                  <section className="edit-panel">
+                    <div className="edit-panel-title">
+                      <h3>目标与行动</h3>
+                      <span>GOALS</span>
+                    </div>
+                    <label className="edit-field">
+                      <b>我能提供</b>
+                      <textarea value={editOffersText} onChange={(event) => setEditOffersText(event.target.value)} />
+                    </label>
+                    <label className="edit-field">
+                      <b>我正在寻找</b>
+                      <textarea value={editWantsText} onChange={(event) => setEditWantsText(event.target.value)} />
+                    </label>
+                    <button className="edit-ai-card" type="button" onClick={() => setStep('input')}>
+                      <b>AI 辅助优化</b>
+                    </button>
+                    <button className="edit-reset-card" type="button" onClick={openResetConfirm} disabled={isResettingPersonalInfo}>
+                      <b>清空资料</b>
+                    </button>
+                  </section>
+                )}
+
+                {error && <p className="error-text">{error}</p>}
+                <div className="sticky-actions edit-actions two">
+                  <button className="secondary-action" type="button" onClick={() => setStep('card')}>
+                    取消
+                  </button>
+                  <button className="primary-action lime" type="button" onClick={saveProfileEdits} disabled={isSavingProfile}>
+                    {isSavingProfile ? '保存中' : '保存'}
                   </button>
                 </div>
               </div>
@@ -1194,15 +1678,40 @@ export function AgentCreator() {
           )}
 
           {step === 'candidate' && selectedCandidate && (
-            <section className="candidate-screen">
-              <Header title="Candidate" action="☆" />
-              <div className="content">
+            <section className="candidate-screen" onTouchStart={handleCandidateTouchStart} onTouchEnd={handleCandidateTouchEnd}>
+              <Header
+                title="Candidate"
+                action={
+                  <button
+                    className="round-icon"
+                    type="button"
+                    aria-label="返回推荐列表"
+                    title="返回推荐列表"
+                    onClick={() => setStep('matches')}
+                  >
+                    ←
+                  </button>
+                }
+              />
+              <div className="content" ref={candidateContentRef}>
                 <div className="candidate-hero">
-                  <span className="candidate-avatar big">{selectedCandidate.avatar}</span>
-                  <h2>{selectedCandidate.name}</h2>
-                  <p>{selectedCandidate.role}</p>
+                  <div className="candidate-identity-row">
+                    <span className="candidate-avatar big">{selectedCandidate.avatar}</span>
+                    <div className="candidate-title-block">
+                      <h2>{selectedCandidate.name}</h2>
+                      <p>{selectedCandidate.role}</p>
+                    </div>
+                  </div>
+                  <div className="candidate-contact-strip">
+                    <span>{selectedCandidate.contactHandle ? `联系方式：${selectedCandidate.contactHandle}` : '联系方式待补充'}</span>
+                    {selectedCandidate.contactHandle && (
+                      <button type="button" aria-label="复制候选人联系方式" onClick={() => copyCandidateContact(selectedCandidate)}>
+                        复制
+                      </button>
+                    )}
+                  </div>
                   <div className="tags">
-                    {selectedCandidate.tags.map((tag) => (
+                    {selectedCandidate.tags.slice(0, 3).map((tag) => (
                       <span key={tag}>{tag}</span>
                     ))}
                   </div>
@@ -1212,7 +1721,12 @@ export function AgentCreator() {
                   <SummaryRow title="他能提供">{selectedCandidate.offer}</SummaryRow>
                   <SummaryRow title="建议聊什么">{selectedCandidate.topic}</SummaryRow>
                 </div>
-                <div className="sticky-actions">
+                <div className={hasCandidateBrowsing ? 'sticky-actions candidate-actions two' : 'sticky-actions'}>
+                  {hasCandidateBrowsing && (
+                    <button className="secondary-action" type="button" aria-label="查看下一个推荐" onClick={showNextCandidate}>
+                      {nextCandidate ? '下一个' : '回列表'}
+                    </button>
+                  )}
                   <button className="primary-action lime" onClick={() => setStep('icebreaker')}>
                     生成破冰话术
                   </button>
@@ -1355,9 +1869,9 @@ function BottomNav({ currentStep, onNavigate }: { currentStep: FlowStep; onNavig
         <b>＋</b>
         <span>进化</span>
       </button>
-      <button className={activeKey === 'card' ? 'active' : ''} onClick={() => onNavigate('card')}>
+      <button className={activeKey === 'card' ? 'active' : ''} title="我的数字分身" onClick={() => onNavigate('card')}>
         <b>◈</b>
-        <span>我的Agent</span>
+        <span>分身</span>
       </button>
       <button className={activeKey === 'find' ? 'active' : ''} onClick={() => onNavigate('find')}>
         <b>⌕</b>

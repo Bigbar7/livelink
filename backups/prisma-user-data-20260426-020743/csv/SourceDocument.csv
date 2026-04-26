@@ -1,0 +1,966 @@
+id,userId,agentId,sourceKind,sourceType,url,title,description,rawText,cleanedText,contentHash,fetchStatus,extractionStatus,userNote,errorReason,createdAt,updatedAt
+cmoe92to9001njy04zacvr1kb,cmoe92tmy001jjy045h9ttx5y,cmoe92tnf001ljy04uzr5vxop,manual,manual_text,,自我介绍,,我在海外运营和孵化品牌从零到一到一百的创新与裂变 搭建海外私域 日活跃量50  目前在做ai领域的产品设计与落地,我在海外运营和孵化品牌从零到一到一百的创新与裂变 搭建海外私域 日活跃量50  目前在做ai领域的产品设计与落地,,manual,extracted,,,2026-04-25 11:22:40.954,2026-04-25 11:22:45.566
+cmoe8y5ov0004jy04dx3d7uck,cmoe8y5ms0000jy042fgp44i8,cmoe8y5ni0002jy04s9y7chm8,manual,manual_text,,自我介绍,,我是小Lin说是一位拥有顶尖金融背景的知识类头部博主，她本科毕业于北京大学，并在哥伦比亚大学获得硕士学位，随后进入纽约摩根大通（J.P. Morgan）投行部工作。在这一职业生涯的基础上，她通过“小Lin说”频道将复杂的宏观经济、金融史和商业案例转化为通俗易懂的视听语言，其代表作包括深度拆解日韩经济、美联储机制及著名商战系列，成功搭建起了一座连接专业金融知识与大众认知之间的桥梁，展现了极其深厚的行业积淀与内容创作能力。,我是小Lin说是一位拥有顶尖金融背景的知识类头部博主，她本科毕业于北京大学，并在哥伦比亚大学获得硕士学位，随后进入纽约摩根大通（J.P. Morgan）投行部工作。在这一职业生涯的基础上，她通过“小Lin说”频道将复杂的宏观经济、金融史和商业案例转化为通俗易懂的视听语言，其代表作包括深度拆解日韩经济、美联储机制及著名商战系列，成功搭建起了一座连接专业金融知识与大众认知之间的桥梁，展现了极其深厚的行业积淀与内容创作能力。,,manual,extracted,,,2026-04-25 11:19:03.247,2026-04-25 11:19:10.142
+cmoe91az0000qjy04wz22hjwm,cmoe91aor000mjy04e8zbxj9r,cmoe91ap6000ojy041q42vccs,link,github,https://github.com/Bigbar7,GitHub: Bigbar7 (@Bigbar7),,"GitHub 用户：Bigbar7 (@Bigbar7)
+
+主页：https://github.com/Bigbar7
+
+关注者：0
+
+公开仓库数：3
+
+代表仓库：
+
+仓库：livelink
+主要语言：TypeScript
+Stars：0
+Forks：0
+链接：https://github.com/Bigbar7/livelink
+README 摘要：# Livelink 文档索引
+
+当前保留三份核心文档：
+
+1. [`project-plan.md`](./project-plan.md)：PRD，说明个人 Wiki、AI 名片、搜索推荐、连接闭环和后续演进。
+2. [`technical-design.md`](./technical-design.md)：技术方案，说明 H5 架构、公开链接抓取、知识抽取、个人 Wiki、AI 名片、API、数据模型和部署设计。
+3. [`implementation-plan.md`](./implementation-plan.md)：开发计划，说明里程碑、逐步验证、48 小时排期、编码顺序、Demo 脚本和验收清单。
+
+## 当前执行决策
+
+```text
+先用 H5 开发个人 Wiki + AI 名片 MVP
+核心资产是基于公开链接素材生成的个人知识库和个人 Wiki
+AI 名片是从个人 Wiki 派生出的扫码和社交转化层
+当前重点是链接素材抓取、知识抽取、Wiki 生成、名片发布、搜索推荐和连接
+活动、路演、LBS、简历上传和录音输入作为后续扩展，不作为当前主闭环
+AI、推荐、登录均采用轻量实现，并为 PostgreSQL、向量检索和 Agent to Agent 保留边界
+```
+
+## 开发优先级
+
+```text
+基础资料与公开链接提交
+→ 公开链接抓取与素材入库
+→ AI 知识抽取与事实入库
+→ 个人 Wiki 生成与编辑确认
+→ AI 名片生成、公开主页和二维码
+→ Wiki 与名片搜索
+→ 推荐名片
+→ 连接申请和关系沉淀
+```
+
+## 执行要求
+
+```text
+每完成一个里程碑必须验证
+验证通过后才能进入下一步
+默认验证包括 lint、typecheck、build、关键 API / 页面主路径和失败兜底
+```
+
+仓库：Coursera-ML-using-matlab-python
+描述：coursera吴恩达机器学习课程作业自写Python版本+Matlab原版
+Stars：0
+Forks：0
+链接：https://github.com/Bigbar7/Coursera-ML-using-matlab-python
+README 摘要：# ML-code-using-matlab-and-python
+
+coursera吴恩达机器学习课程作业自写**Python2.7**版本，使用**jupyter notebook**实现，使代码更有层次感，可读性强。
+
+本repository实现算法包括如下：
+
+线性回归: linear_regression.ipynb
+
+多元线性回归：linear_multiple.ipynb
+
+逻辑回归：logic_regression.ipynb
+
+正则化用于逻辑回归： logic_regularization.ipynb
+
+模型诊断+学习曲线： learnCurve.ipynb
+
+一对多分类模型：oneVSall.ipynb
+
+神经网络模型：neuralNetwork.ipynb
+
+SVM分类器：svm.ipynb
+
+kmeans聚类：kmeans.ipynb
+
+pca降维：pca.ipynb
+
+高斯分布用于异常检测：anomaly_detection.ipynb
+
+协调过滤推荐算法：Collaborative_Filter.ipynb
+
+PS:网上其他参考资料分享：
+-----
+
+1.课程作业原版是MATLAB版本（填空式编码):对应 machine-learning-ex1——ex8 文件夹
+
+2.[kaleko](https://github.com/kaleko/CourseraML)整理的jupyter notebooks版本：对应 coursera_ml_ipynb 文件夹
+
+3.[mstampfer](https://github.com/mstampfer/Coursera-Stanford-ML-Python)对照**原版作业格式**整理的Python版本，可以尝试自己实现
+
+4.[AceCoooool](https://github.com/AceCoooool/ML-Andrew-Ng)整理的Python版本，有中文注释
+
+5.如果需要了解更多算法知识，本人使用jupyter notebook整理的peter的[《机器学习实战》代码](https://github.com/TingNie/Machine-learning-in-action)
+
+6.本人自写的，关于吴恩达（Andrew Ng）开设的深度学习课程[deeplearning.ai](https://github.com/TingNie/deeplearning.ai-coursera)的课程答案
+
+仓库：james
+Stars：0
+Forks：0
+链接：https://github.com/Bigbar7/james","GitHub 用户：Bigbar7 (@Bigbar7)
+
+主页：https://github.com/Bigbar7
+
+关注者：0
+
+公开仓库数：3
+
+代表仓库：
+
+仓库：livelink
+主要语言：TypeScript
+Stars：0
+Forks：0
+链接：https://github.com/Bigbar7/livelink
+README 摘要：# Livelink 文档索引
+
+当前保留三份核心文档：
+
+1. [`project-plan.md`](./project-plan.md)：PRD，说明个人 Wiki、AI 名片、搜索推荐、连接闭环和后续演进。
+2. [`technical-design.md`](./technical-design.md)：技术方案，说明 H5 架构、公开链接抓取、知识抽取、个人 Wiki、AI 名片、API、数据模型和部署设计。
+3. [`implementation-plan.md`](./implementation-plan.md)：开发计划，说明里程碑、逐步验证、48 小时排期、编码顺序、Demo 脚本和验收清单。
+
+## 当前执行决策
+
+```text
+先用 H5 开发个人 Wiki + AI 名片 MVP
+核心资产是基于公开链接素材生成的个人知识库和个人 Wiki
+AI 名片是从个人 Wiki 派生出的扫码和社交转化层
+当前重点是链接素材抓取、知识抽取、Wiki 生成、名片发布、搜索推荐和连接
+活动、路演、LBS、简历上传和录音输入作为后续扩展，不作为当前主闭环
+AI、推荐、登录均采用轻量实现，并为 PostgreSQL、向量检索和 Agent to Agent 保留边界
+```
+
+## 开发优先级
+
+```text
+基础资料与公开链接提交
+→ 公开链接抓取与素材入库
+→ AI 知识抽取与事实入库
+→ 个人 Wiki 生成与编辑确认
+→ AI 名片生成、公开主页和二维码
+→ Wiki 与名片搜索
+→ 推荐名片
+→ 连接申请和关系沉淀
+```
+
+## 执行要求
+
+```text
+每完成一个里程碑必须验证
+验证通过后才能进入下一步
+默认验证包括 lint、typecheck、build、关键 API / 页面主路径和失败兜底
+```
+
+仓库：Coursera-ML-using-matlab-python
+描述：coursera吴恩达机器学习课程作业自写Python版本+Matlab原版
+Stars：0
+Forks：0
+链接：https://github.com/Bigbar7/Coursera-ML-using-matlab-python
+README 摘要：# ML-code-using-matlab-and-python
+
+coursera吴恩达机器学习课程作业自写**Python2.7**版本，使用**jupyter notebook**实现，使代码更有层次感，可读性强。
+
+本repository实现算法包括如下：
+
+线性回归: linear_regression.ipynb
+
+多元线性回归：linear_multiple.ipynb
+
+逻辑回归：logic_regression.ipynb
+
+正则化用于逻辑回归： logic_regularization.ipynb
+
+模型诊断+学习曲线： learnCurve.ipynb
+
+一对多分类模型：oneVSall.ipynb
+
+神经网络模型：neuralNetwork.ipynb
+
+SVM分类器：svm.ipynb
+
+kmeans聚类：kmeans.ipynb
+
+pca降维：pca.ipynb
+
+高斯分布用于异常检测：anomaly_detection.ipynb
+
+协调过滤推荐算法：Collaborative_Filter.ipynb
+
+PS:网上其他参考资料分享：
+-----
+
+1.课程作业原版是MATLAB版本（填空式编码):对应 machine-learning-ex1——ex8 文件夹
+
+2.[kaleko](https://github.com/kaleko/CourseraML)整理的jupyter notebooks版本：对应 coursera_ml_ipynb 文件夹
+
+3.[mstampfer](https://github.com/mstampfer/Coursera-Stanford-ML-Python)对照**原版作业格式**整理的Python版本，可以尝试自己实现
+
+4.[AceCoooool](https://github.com/AceCoooool/ML-Andrew-Ng)整理的Python版本，有中文注释
+
+5.如果需要了解更多算法知识，本人使用jupyter notebook整理的peter的[《机器学习实战》代码](https://github.com/TingNie/Machine-learning-in-action)
+
+6.本人自写的，关于吴恩达（Andrew Ng）开设的深度学习课程[deeplearning.ai](https://github.com/TingNie/deeplearning.ai-coursera)的课程答案
+
+仓库：james
+Stars：0
+Forks：0
+链接：https://github.com/Bigbar7/james",,fetched,pending,"",,2026-04-25 11:21:30.061,2026-04-25 11:21:30.061
+cmoe90vcf000ljy048ur82b3r,cmoe90v1c000hjy04tzh67s3s,cmoe90v1w000jjy04u4sdoye7,link,github,https://github.com/lidangzzz,GitHub: 立党 Lidang (@lidangzzz),Creator of Hedgehog Lab and Hedgehog Computing Group,"GitHub 用户：立党 Lidang (@lidangzzz)
+
+主页：https://github.com/lidangzzz
+
+简介：Creator of Hedgehog Lab and Hedgehog Computing Group
+
+组织/公司：@Hedgehog-Computing
+
+网站：linktr.ee/lidang
+
+地点：Texas
+
+关注者：6434
+
+公开仓库数：49
+
+代表仓库：
+
+仓库：goal-driven
+描述：A multi-agent system that keeps running for ~100 hours and solve a very complicated coding or math problem that can be verified
+Stars：997
+Forks：69
+链接：https://github.com/lidangzzz/goal-driven
+README 摘要：[中文版](readme_cn.md)
+
+# Goal-Driven
+
+
+The purpose of the Goal-Driven approach is to enable your multi-agent system (e.g., Claude Code, Codex, OpenClaw) to sustain more than 300 hours of continuous effort in solving an extremely complex problem that has a specific objective and a set of strict, well-defined criteria.
+
+Goal-Driven is best suited for tasks that are highly intricate, time-consuming, logically complex, and abstract—yet can be thoroughly evaluated for success. Typical examples include compiler design, mathematical theorem proving, computational problems, database architecture, sophisticated system-level design, and EDA simulation challenges.
+
+The core concepts of Goal-Driven are as follows:
+
+1. Goal – the ultimate objective of the entire system and the central task of all subagents.
+
+2. Criteria – a clear set of conditions that allow the master agent to determine whether the task is completed and the goal has been achieved.
+
+3. Subagent – an agent responsible for continuously working toward solving the problem and achieving the assigned goal.
+
+4. Master Agent – the only controller of subagents, responsible for independently evaluating whether the goal has been reached bas
+
+仓库：How-to-run
+描述：立党零基础转码笔记
+主要语言：TypeScript
+Stars：5818
+Forks：360
+Topics：computer-science, python
+链接：https://github.com/lidangzzz/How-to-run
+README 摘要：# 立党零基础转码笔记
+
+Github Page只读版：[https://lidangzzz.github.io/How-to-run/](https://lidangzzz.github.io/How-to-run/)
+
+## 第一章 零基础转码篇
+
+1. 你的第一门编程语言，Python。Coursera上的Python for Everbody （UMich）：[https://www.coursera.org/learn/python?specialization=python](https://www.coursera.org/learn/python?specialization=python)
+2. 你的第二门也是最重要的Computer Science课程，数据结构和算法 （UCSD）：[https://www.coursera.org/specializations/data-structures-algorithms?=#courses](https://www.coursera.org/specializations/data-structures-algorithms?=#courses)
+3. 前端入门（Reactjs）：
+    1. Meta的Coursera零基础前端转码课：[https://www.coursera.org/professional-certificates/meta-front-end-developer](https://www.coursera.org/professional-certificates/meta-front-end-developer)
+    2. 如果只看文字版，推荐W3CSchool教程：
+        1. HTML：[https://www.w3schools.com/html/default.asp](https://www.w3schools.com/html/default.asp)
+        2. CSS：[https://www.w3schools.com/css/default.asp](https://www.w3schools.com/css/default.asp) 
+        3. JavaScript：[https://www.w3schools.com/js/default.asp](https://www.w3schools.com/js/default.asp)
+    3. 其他参考文档：
+        1. Reactjs官方文档：[https://reactjs.org/tutorial/tutorial.html](https://reactjs.org/tutorial/tutorial.html)
+        2. 
+
+仓库：Best-Practice-for-Building-A-Startup-in-Delaware-with-Tech-Tools
+描述：美国华人技术创业的快速公司/银行/税务/投资操作白皮书
+Stars：693
+Forks：39
+链接：https://github.com/lidangzzz/Best-Practice-for-Building-A-Startup-in-Delaware-with-Tech-Tools
+README 摘要：# 美国（硅谷）科技创业白皮书
+### 一份简明的快速注册公司/银行/税务/投资/股份/身份操作教程 
+#### Best Practice for Building a Startup in Delaware with Tech Tools
+
+---
+
+在信息化的今天，有梦想的全球中国人/华人完全可以依靠在线平台服务，自助完成 Delaware 注册 C-Corp 创业、开银行、税务、公司章程、股份、雇佣、记账等全部流程。
+
+所以我在Github上开了这个repo，分享在 Delaware 注册 C-Corp 美国创业公司的完整流程和步骤，彻底消灭美国创业的法务和流程门槛，让每一个程序员可以在有梦想的时候，依照本书的全部流程和章节，用最少的时间和金钱成本，完成 Delaware 的 C-Corp 公司的注册运营，让公司尽快投入完整运营并获得种子轮投资。
+
+---
+
+正文： 
+
+[为什么选择美国特拉华州 （Delaware） 注册公司？](./Why-Delaware.md)
+
+[5分钟在 Stripe Atlas 注册一家标准的美国（硅谷）C-Corp 创业公司](./create-a-company-in-5-minues.md)
+
+仓库：BettaFish
+描述：微舆：人人可用的多Agent舆情分析助手，打破信息茧房，还原舆情原貌，预测未来走向，辅助决策！从0实现，不依赖任何框架。
+Stars：4
+Forks：0
+链接：https://github.com/lidangzzz/BettaFish
+README 摘要：<div align=""center"">
+
+<img src=""static/image/logo_compressed.png"" alt=""BettaFish Logo"" width=""100%"">
+
+<a href=""https://trendshift.io/repositories/15286"" target=""_blank""><img src=""https://trendshift.io/api/badge/repositories/15286"" alt=""666ghj%2FBettaFish | Trendshift"" style=""width: 250px; height: 55px;"" width=""250"" height=""55""/></a>
+
+<a href=""https://aihubmix.com/?aff=8Ds9"" target=""_blank""><img src=""./static/image/logo_aihubmix.png"" alt=""666ghj%2FBettaFish | Trendshift"" height=""40""/></a>&ensp;
+<a href=""https://lioncc.ai/"" target=""_blank""><img src=""./static/image/logo_loincc.png"" alt=""666ghj%2FBettaFish | Trendshift"" height=""40""/></a>&ensp;
+<a href=""https://share.302.ai/P66Qe3"" target=""_blank""><img src=""./static/image/logo_302ai.png"" alt=""666ghj%2FBettaFish | Trendshift"" height=""40""/></a>
+
+<a href=""https://open.anspire.cn/?share_code=3E1FUOUH"" target=""_blank""><img src=""./static/image/logo_anspire.png"" alt=""666ghj%2FBettaFish | Trendshift"" height=""50""/></a>
+
+[![GitHub Stars](https://img.shields.io/github/stars/666ghj/BettaFish?style=flat-square)](https://github.com/666ghj/BettaFish/stargazers)
+[![GitHub Watchers](https://img.shields.io/github/watchers/666ghj/BettaFish?style=flat-squa
+
+仓库：Lean4-ts
+描述：A TypeScript implementation of Lean4
+主要语言：TypeScript
+Stars：6
+Forks：0
+链接：https://github.com/lidangzzz/Lean4-ts
+README 摘要：# Lean4 Compiler (TypeScript Implementation)
+
+A TypeScript implementation of a Lean4 language compiler and interpreter. This project provides lexing, parsing, and evaluation capabilities for a substantial subset of the Lean4 programming language, including support for dependent types, pattern matching, higher-order functions, and more.
+
+## Features
+
+### Core Language Features
+
+- **Lexical Analysis**: Full tokenizer for Lean4 syntax
+- **Parsing**: Complete parser producing an Abstract Syntax Tree (AST)
+- **Evaluation**: Interpreter for executing Lean4 programs
+
+### Supported Constructs
+
+- **Definitions**: `def`, `theorem`, `axiom`, `constant`
+- **Types**: `Type`, `Sort`, `Prop`, dependent types (Pi types, Sigma types)
+- **Functions**: Lambda expressions, higher-order functions, currying
+- **Pattern Matching**: Comprehensive pattern matching with:
+  - Wildcard patterns
+  - Literal patterns
+  - Constructor patterns
+  - Tuple patterns
+  - Array patterns
+  - N+K patterns (e.g., `n + 1`)
+  - Nested patterns
+- **Control Flow**: `if`/`then`/`else`, `match`/`with`
+- **Data Structures**:
+  - Inductive types
+  - Structures
+  - Tuples
+  - Arrays and Lists
+- **Type Classes**: Class declarations
+
+仓库：how-to-run-Q-and-A
+描述：立党润学笔记问答
+Stars：527
+Forks：27
+链接：https://github.com/lidangzzz/how-to-run-Q-and-A
+README 摘要：# 立党润学问答
+
+## 1. 什么条件才能去美国工作？为什么直接给美国公司投简历这么难？
+
+美国公司雇佣美国公民和美国绿卡，流程和条件非常简单；美国公司雇佣澳洲/加拿大/新加坡/墨西哥/智利国籍公民，通常直接拿TN/E3/H1b1签证，流程也比较简单（不需要排名，可以直接在机场海关当场拿到）。
+
+美国公司雇佣中国公民，条件非常繁琐：
+
+1. 用英语完整流畅完成面试，提前大半年签好offer，完成背景调查；
+
+2. 公司提前大半年帮你花大成本雇律师，准备H1b工作签证的申请材料；
+
+3. 律师帮你4月份抽H1b签证和费用支票，中签率30%（不分公司、薪酬、行业、国家，中签率一致），当你拿到H1b签证后，可以年底正式到美国大使馆拿到H1b签证，直接登陆美国；
+
+4. 如果抽签失败，必须反复重复步骤2和3，一年年不断抽签，直到抽中为止；
+
+5. 抽中H1b签证后，公司帮你排EB2雇主担保绿卡，需要再经过5年的时间，拿到绿卡。
+
+因此美国公司直接雇佣中国公民，不止金钱成本非常昂贵，而且时间非常漫长——绝大多数美国公司如果能雇到美国本地人或者留学生，压根不用考虑中国公民——除非你有杰出的个人能力，保证能为美国公司带来巨大收益和利益，或者你成为美国公司商业布局中不可或缺的一环，美国公司才会必须不惜一切代价、时间、机会成本、金钱等方式，按照上述方式帮你解决这些问题。
+
+**如果你只是普通初级的程序员、产品经理、市场、HR、会计等岗位，美国公司不可能也没有任何动机去帮你解决工作身份签证问题，更不可能去接受一个几乎无法用英语流畅工作的外国人去提供3～6倍薪资溢价。**
+
+## 2. 为什么硅谷科技大厂会提供L1签证的移民机会？
+
+因为以上步骤非常麻烦繁琐，因此大型科技公司（以Amazon AWS、Google著称），会帮你使用L1签证的方式解决美国工作签证的问题：
+
+1. 招聘你到北京、上海、苏黎世、东京、温哥华等容易拿到工作签证的城市，工作1年以上；
+
+2. 工作1年后，公司以“资深员工”的方式，申请美国的非移民签证L1，让你到美国工作；
+
+3. 在持有L1签证期间，你可以在美国全职工作，同时抽5～6次的H1b签证，一旦抽中后，即可使用H1b正式开始工作，否则公司会每年花费金钱雇佣律师帮你继续抽H1b；
+
+4. 一旦L1签证过期，公司会再次帮你解决L1签证，再次入境美国，继续每年抽H1b签证。
+
+但符合L1签证的公司较少，必须是在同公司架构下的海外其他办公室中工作至少一年，且海外分部满足许多苛刻条件。L1签证的金钱成本不仅比H1b更高，而且对公司的要求也更高，因此只有少数跨国互联网和科技公司（Google、Amazon、Meta、Apple、Qualcomm、Intel等）和跨国银行才有动机和能力为员工办理。
+
+## 3. 除了H1b和L1以外，还有哪些其他工作签证？
+
+","GitHub 用户：立党 Lidang (@lidangzzz)
+
+主页：https://github.com/lidangzzz
+
+简介：Creator of Hedgehog Lab and Hedgehog Computing Group
+
+组织/公司：@Hedgehog-Computing
+
+网站：linktr.ee/lidang
+
+地点：Texas
+
+关注者：6434
+
+公开仓库数：49
+
+代表仓库：
+
+仓库：goal-driven
+描述：A multi-agent system that keeps running for ~100 hours and solve a very complicated coding or math problem that can be verified
+Stars：997
+Forks：69
+链接：https://github.com/lidangzzz/goal-driven
+README 摘要：[中文版](readme_cn.md)
+
+# Goal-Driven
+
+
+The purpose of the Goal-Driven approach is to enable your multi-agent system (e.g., Claude Code, Codex, OpenClaw) to sustain more than 300 hours of continuous effort in solving an extremely complex problem that has a specific objective and a set of strict, well-defined criteria.
+
+Goal-Driven is best suited for tasks that are highly intricate, time-consuming, logically complex, and abstract—yet can be thoroughly evaluated for success. Typical examples include compiler design, mathematical theorem proving, computational problems, database architecture, sophisticated system-level design, and EDA simulation challenges.
+
+The core concepts of Goal-Driven are as follows:
+
+1. Goal – the ultimate objective of the entire system and the central task of all subagents.
+
+2. Criteria – a clear set of conditions that allow the master agent to determine whether the task is completed and the goal has been achieved.
+
+3. Subagent – an agent responsible for continuously working toward solving the problem and achieving the assigned goal.
+
+4. Master Agent – the only controller of subagents, responsible for independently evaluating whether the goal has been reached bas
+
+仓库：How-to-run
+描述：立党零基础转码笔记
+主要语言：TypeScript
+Stars：5818
+Forks：360
+Topics：computer-science, python
+链接：https://github.com/lidangzzz/How-to-run
+README 摘要：# 立党零基础转码笔记
+
+Github Page只读版：[https://lidangzzz.github.io/How-to-run/](https://lidangzzz.github.io/How-to-run/)
+
+## 第一章 零基础转码篇
+
+1. 你的第一门编程语言，Python。Coursera上的Python for Everbody （UMich）：[https://www.coursera.org/learn/python?specialization=python](https://www.coursera.org/learn/python?specialization=python)
+2. 你的第二门也是最重要的Computer Science课程，数据结构和算法 （UCSD）：[https://www.coursera.org/specializations/data-structures-algorithms?=#courses](https://www.coursera.org/specializations/data-structures-algorithms?=#courses)
+3. 前端入门（Reactjs）：
+    1. Meta的Coursera零基础前端转码课：[https://www.coursera.org/professional-certificates/meta-front-end-developer](https://www.coursera.org/professional-certificates/meta-front-end-developer)
+    2. 如果只看文字版，推荐W3CSchool教程：
+        1. HTML：[https://www.w3schools.com/html/default.asp](https://www.w3schools.com/html/default.asp)
+        2. CSS：[https://www.w3schools.com/css/default.asp](https://www.w3schools.com/css/default.asp) 
+        3. JavaScript：[https://www.w3schools.com/js/default.asp](https://www.w3schools.com/js/default.asp)
+    3. 其他参考文档：
+        1. Reactjs官方文档：[https://reactjs.org/tutorial/tutorial.html](https://reactjs.org/tutorial/tutorial.html)
+        2. 
+
+仓库：Best-Practice-for-Building-A-Startup-in-Delaware-with-Tech-Tools
+描述：美国华人技术创业的快速公司/银行/税务/投资操作白皮书
+Stars：693
+Forks：39
+链接：https://github.com/lidangzzz/Best-Practice-for-Building-A-Startup-in-Delaware-with-Tech-Tools
+README 摘要：# 美国（硅谷）科技创业白皮书
+### 一份简明的快速注册公司/银行/税务/投资/股份/身份操作教程 
+#### Best Practice for Building a Startup in Delaware with Tech Tools
+
+---
+
+在信息化的今天，有梦想的全球中国人/华人完全可以依靠在线平台服务，自助完成 Delaware 注册 C-Corp 创业、开银行、税务、公司章程、股份、雇佣、记账等全部流程。
+
+所以我在Github上开了这个repo，分享在 Delaware 注册 C-Corp 美国创业公司的完整流程和步骤，彻底消灭美国创业的法务和流程门槛，让每一个程序员可以在有梦想的时候，依照本书的全部流程和章节，用最少的时间和金钱成本，完成 Delaware 的 C-Corp 公司的注册运营，让公司尽快投入完整运营并获得种子轮投资。
+
+---
+
+正文： 
+
+[为什么选择美国特拉华州 （Delaware） 注册公司？](./Why-Delaware.md)
+
+[5分钟在 Stripe Atlas 注册一家标准的美国（硅谷）C-Corp 创业公司](./create-a-company-in-5-minues.md)
+
+仓库：BettaFish
+描述：微舆：人人可用的多Agent舆情分析助手，打破信息茧房，还原舆情原貌，预测未来走向，辅助决策！从0实现，不依赖任何框架。
+Stars：4
+Forks：0
+链接：https://github.com/lidangzzz/BettaFish
+README 摘要：<div align=""center"">
+
+<img src=""static/image/logo_compressed.png"" alt=""BettaFish Logo"" width=""100%"">
+
+<a href=""https://trendshift.io/repositories/15286"" target=""_blank""><img src=""https://trendshift.io/api/badge/repositories/15286"" alt=""666ghj%2FBettaFish | Trendshift"" style=""width: 250px; height: 55px;"" width=""250"" height=""55""/></a>
+
+<a href=""https://aihubmix.com/?aff=8Ds9"" target=""_blank""><img src=""./static/image/logo_aihubmix.png"" alt=""666ghj%2FBettaFish | Trendshift"" height=""40""/></a>&ensp;
+<a href=""https://lioncc.ai/"" target=""_blank""><img src=""./static/image/logo_loincc.png"" alt=""666ghj%2FBettaFish | Trendshift"" height=""40""/></a>&ensp;
+<a href=""https://share.302.ai/P66Qe3"" target=""_blank""><img src=""./static/image/logo_302ai.png"" alt=""666ghj%2FBettaFish | Trendshift"" height=""40""/></a>
+
+<a href=""https://open.anspire.cn/?share_code=3E1FUOUH"" target=""_blank""><img src=""./static/image/logo_anspire.png"" alt=""666ghj%2FBettaFish | Trendshift"" height=""50""/></a>
+
+[![GitHub Stars](https://img.shields.io/github/stars/666ghj/BettaFish?style=flat-square)](https://github.com/666ghj/BettaFish/stargazers)
+[![GitHub Watchers](https://img.shields.io/github/watchers/666ghj/BettaFish?style=flat-squa
+
+仓库：Lean4-ts
+描述：A TypeScript implementation of Lean4
+主要语言：TypeScript
+Stars：6
+Forks：0
+链接：https://github.com/lidangzzz/Lean4-ts
+README 摘要：# Lean4 Compiler (TypeScript Implementation)
+
+A TypeScript implementation of a Lean4 language compiler and interpreter. This project provides lexing, parsing, and evaluation capabilities for a substantial subset of the Lean4 programming language, including support for dependent types, pattern matching, higher-order functions, and more.
+
+## Features
+
+### Core Language Features
+
+- **Lexical Analysis**: Full tokenizer for Lean4 syntax
+- **Parsing**: Complete parser producing an Abstract Syntax Tree (AST)
+- **Evaluation**: Interpreter for executing Lean4 programs
+
+### Supported Constructs
+
+- **Definitions**: `def`, `theorem`, `axiom`, `constant`
+- **Types**: `Type`, `Sort`, `Prop`, dependent types (Pi types, Sigma types)
+- **Functions**: Lambda expressions, higher-order functions, currying
+- **Pattern Matching**: Comprehensive pattern matching with:
+  - Wildcard patterns
+  - Literal patterns
+  - Constructor patterns
+  - Tuple patterns
+  - Array patterns
+  - N+K patterns (e.g., `n + 1`)
+  - Nested patterns
+- **Control Flow**: `if`/`then`/`else`, `match`/`with`
+- **Data Structures**:
+  - Inductive types
+  - Structures
+  - Tuples
+  - Arrays and Lists
+- **Type Classes**: Class declarations
+
+仓库：how-to-run-Q-and-A
+描述：立党润学笔记问答
+Stars：527
+Forks：27
+链接：https://github.com/lidangzzz/how-to-run-Q-and-A
+README 摘要：# 立党润学问答
+
+## 1. 什么条件才能去美国工作？为什么直接给美国公司投简历这么难？
+
+美国公司雇佣美国公民和美国绿卡，流程和条件非常简单；美国公司雇佣澳洲/加拿大/新加坡/墨西哥/智利国籍公民，通常直接拿TN/E3/H1b1签证，流程也比较简单（不需要排名，可以直接在机场海关当场拿到）。
+
+美国公司雇佣中国公民，条件非常繁琐：
+
+1. 用英语完整流畅完成面试，提前大半年签好offer，完成背景调查；
+
+2. 公司提前大半年帮你花大成本雇律师，准备H1b工作签证的申请材料；
+
+3. 律师帮你4月份抽H1b签证和费用支票，中签率30%（不分公司、薪酬、行业、国家，中签率一致），当你拿到H1b签证后，可以年底正式到美国大使馆拿到H1b签证，直接登陆美国；
+
+4. 如果抽签失败，必须反复重复步骤2和3，一年年不断抽签，直到抽中为止；
+
+5. 抽中H1b签证后，公司帮你排EB2雇主担保绿卡，需要再经过5年的时间，拿到绿卡。
+
+因此美国公司直接雇佣中国公民，不止金钱成本非常昂贵，而且时间非常漫长——绝大多数美国公司如果能雇到美国本地人或者留学生，压根不用考虑中国公民——除非你有杰出的个人能力，保证能为美国公司带来巨大收益和利益，或者你成为美国公司商业布局中不可或缺的一环，美国公司才会必须不惜一切代价、时间、机会成本、金钱等方式，按照上述方式帮你解决这些问题。
+
+**如果你只是普通初级的程序员、产品经理、市场、HR、会计等岗位，美国公司不可能也没有任何动机去帮你解决工作身份签证问题，更不可能去接受一个几乎无法用英语流畅工作的外国人去提供3～6倍薪资溢价。**
+
+## 2. 为什么硅谷科技大厂会提供L1签证的移民机会？
+
+因为以上步骤非常麻烦繁琐，因此大型科技公司（以Amazon AWS、Google著称），会帮你使用L1签证的方式解决美国工作签证的问题：
+
+1. 招聘你到北京、上海、苏黎世、东京、温哥华等容易拿到工作签证的城市，工作1年以上；
+
+2. 工作1年后，公司以“资深员工”的方式，申请美国的非移民签证L1，让你到美国工作；
+
+3. 在持有L1签证期间，你可以在美国全职工作，同时抽5～6次的H1b签证，一旦抽中后，即可使用H1b正式开始工作，否则公司会每年花费金钱雇佣律师帮你继续抽H1b；
+
+4. 一旦L1签证过期，公司会再次帮你解决L1签证，再次入境美国，继续每年抽H1b签证。
+
+但符合L1签证的公司较少，必须是在同公司架构下的海外其他办公室中工作至少一年，且海外分部满足许多苛刻条件。L1签证的金钱成本不仅比H1b更高，而且对公司的要求也更高，因此只有少数跨国互联网和科技公司（Google、Amazon、Meta、Apple、Qualcomm、Intel等）和跨国银行才有动机和能力为员工办理。
+
+## 3. 除了H1b和L1以外，还有哪些其他工作签证？
+
+",,fetched,extracted,"",,2026-04-25 11:21:09.807,2026-04-25 11:21:47.862
+cmoe93xl30020jy04lcvwl558,cmoe93xjs001wjy04uupa03gr,cmoe93xk9001yjy044yqcpql9,manual,manual_text,,自我介绍,,我是一个工程师,我是一个工程师,,manual,extracted,,,2026-04-25 11:23:32.679,2026-04-25 11:23:35.547
+cmoe9dzm4002bjy04ss8q87bn,cmoe9dzjy0027jy04iftzlr1l,cmoe9dzkt0029jy04yetfy8p6,manual,manual_text,,自我介绍,,我叫 Lavine，目前就读于香港城市大学计算机科学专业硕士学位 ，本科毕业于中国海洋大学数学与应用数学专业 。我是一名兼具严谨数据洞察力与国际化传播视野的综合型人才 。在专业领域，我拥有扎实的数理建模与数字化技术功底：量化分析实战：曾获 PandaAl 量化因子大赛全国亚军（排名前1%），擅长利用 Python 进行大规模数据清洗与模型优化，实现模型收益率超 50% 。数字化洞察：熟练运用 Python、R、Matlab 等工具，具备将复杂数据转化为**可持续发展（Sustainability）**深度洞察的量化能力 。在社会实践与传播方面，我展现了卓越的运营能力与领导力：自媒体影响力：作为一名抖音创作者，我通过建立竞品数据追踪模型优化推流策略，单条视频最高获赞超 2.1 万次 。国际化视野：拥有雅思 6.5 分的语言能力，曾在 UPDF 担任 SEO 实习生，负责国际化品牌的传播闭环，具备出色的跨文化沟通与商务撮合能力 。团队协作：曾任海德学院篮球队队长，擅长通过数字化战术储备领导团队达成目标 。我具备敏锐的社会责任感（ESG Awareness），擅长利用数字化手段讲述企业社会责任（CSR）的故事 。我渴望将这些跨界经验投入到 2025 福布斯中国 ESG 峰会中，以大使的身份贡献一份数字化与品牌声誉管理的力量 。,我叫 Lavine，目前就读于香港城市大学计算机科学专业硕士学位 ，本科毕业于中国海洋大学数学与应用数学专业 。我是一名兼具严谨数据洞察力与国际化传播视野的综合型人才 。在专业领域，我拥有扎实的数理建模与数字化技术功底：量化分析实战：曾获 PandaAl 量化因子大赛全国亚军（排名前1%），擅长利用 Python 进行大规模数据清洗与模型优化，实现模型收益率超 50% 。数字化洞察：熟练运用 Python、R、Matlab 等工具，具备将复杂数据转化为**可持续发展（Sustainability）**深度洞察的量化能力 。在社会实践与传播方面，我展现了卓越的运营能力与领导力：自媒体影响力：作为一名抖音创作者，我通过建立竞品数据追踪模型优化推流策略，单条视频最高获赞超 2.1 万次 。国际化视野：拥有雅思 6.5 分的语言能力，曾在 UPDF 担任 SEO 实习生，负责国际化品牌的传播闭环，具备出色的跨文化沟通与商务撮合能力 。团队协作：曾任海德学院篮球队队长，擅长通过数字化战术储备领导团队达成目标 。我具备敏锐的社会责任感（ESG Awareness），擅长利用数字化手段讲述企业社会责任（CSR）的故事 。我渴望将这些跨界经验投入到 2025 福布斯中国 ESG 峰会中，以大使的身份贡献一份数字化与品牌声誉管理的力量 。,,manual,extracted,,,2026-04-25 11:31:21.868,2026-04-25 11:31:41.066
+cmoeap0uf0004if04off2dt20,cmoeap0rq0000if04jey0xgph,cmoeap0sd0002if04q80pv239,resume,resume,,Lavine-cv-esg .pdf,,"","",,manual,extracted,,,2026-04-25 12:07:56.296,2026-04-25 12:07:59.628
+cmoedowez0004ji04i9xugenl,cmoedowd30000ji04meq2h0u8,cmoedowdq0002ji044c3was87,resume,resume,,Lavine-cv-esg .pdf,,"","",,manual,extracted,,,2026-04-25 13:31:49.403,2026-04-25 13:31:52.593
+cmoeemhtd0004l20472dgpe9x,cmoeemhrd0000l20405yxh07k,cmoeemhrv0002l204nyfupqgf,resume,resume,,Lavine-cv-esg .pdf,," 	主修课程：数学分析、高等代数、时间序列分析、数据科学、统计建模、计算机视觉、网络安全、NLP 	等。
+Lavine
+出生年月：2001.2 	地址：深圳/香港
+联系电话：18816493987 	& 	56641096 	邮箱：lavinexie@foxmail.com
+教育背景
+2025.09-至今 	香港城市大学 	计算机科学 	| 	硕士
+2020.09-2024.6 	中国海洋大学 	数学与应用数学 	| 	本科
+职业经历与项目实践
+自媒体创作者 	| 	抖音 	(字节跳动) 	(2021.08 	- 	至今)
+ 	成功提升账号品牌传播力与用户互动率，实现单条视频浏览量突破 	40,000 	次、点赞超 	21,000 	次，通过建立
+同类竞品数据追踪模型，针对性优化选题与推流策略。
+ 	驱动数字化内容增长，沉淀了一套基于数据反馈的受众洞察方法论，通过打磨视频细节并深度应用平台流量算
+法，精准触达目标用户群体。
+PandaAI 	量化因子大赛 	| 	亚军选手 	(2025.12 	- 	2026.2)
+ 	在高强度金融技术竞赛中获得全国亚军，在数千名参赛选手中排名前 	1%，通过运用 	Python 	建模能力进行大
+规模数据清洗与量化因子挖掘，实现比赛模型收益率超 	50%，IC,IR 	指数排在前十。
+海德学院篮球队 	| 	队长 	(2021.08 	- 	2023.11)
+ 	优化团队战略协作并达成赛事预期目标，成功领导 	18 	人规模团队完成赛季博弈，通过为对手建立能力画像并
+制定数字化战术储备，展现了卓越的资源统筹与领导力。
+UPDF 	| 	内容运营与 	SEO 	实习生 	(2024.09 	- 	2024.12)
+ 	提升国际化品牌在搜索引擎的曝光维度，优化了核心关键词的搜索排名，通过执行 	SEO 	策略与内容矩阵策划，
+协同推动国际化项目的传播闭环。
+自我评价
+我是一位具备数据洞察力与国际化传播视野的综合型人才。 	凭借在香港的学习背景及自媒体实战经验，我能够
+精准链接峰会与大众，用数字化手段讲好企业社会责任 	(CSR) 	的故事，为 	2025 	福布斯中国 	ESG 	峰会贡献大
+使力量。
+技能证书
+ 	语言与国际化：雅思 	6.5 	分 	；具备扎实的跨文化沟通能力，能够胜任国际化峰会中的外宾接待与商务撮合
+(Stakeholder 	Engagement)。
+ 	计算机与数字化：熟练使用 	Python、Matlab、R 	语言等 	；具备将复杂数据转化为可持续发展 	(Sustainability) 	洞
+察的量化能力。
+ 	综合素养：具备敏锐的网络嗅觉与社会责任感 	(ESG 	Awareness) 	；擅长利用自媒体渠道进行品牌声誉管理，
+具备极强的项目执行与抗压能力。
+
+-- 1 of 1 --"," 	主修课程：数学分析、高等代数、时间序列分析、数据科学、统计建模、计算机视觉、网络安全、NLP 	等。
+Lavine
+出生年月：2001.2 	地址：深圳/香港
+联系电话：18816493987 	& 	56641096 	邮箱：lavinexie@foxmail.com
+教育背景
+2025.09-至今 	香港城市大学 	计算机科学 	| 	硕士
+2020.09-2024.6 	中国海洋大学 	数学与应用数学 	| 	本科
+职业经历与项目实践
+自媒体创作者 	| 	抖音 	(字节跳动) 	(2021.08 	- 	至今)
+ 	成功提升账号品牌传播力与用户互动率，实现单条视频浏览量突破 	40,000 	次、点赞超 	21,000 	次，通过建立
+同类竞品数据追踪模型，针对性优化选题与推流策略。
+ 	驱动数字化内容增长，沉淀了一套基于数据反馈的受众洞察方法论，通过打磨视频细节并深度应用平台流量算
+法，精准触达目标用户群体。
+PandaAI 	量化因子大赛 	| 	亚军选手 	(2025.12 	- 	2026.2)
+ 	在高强度金融技术竞赛中获得全国亚军，在数千名参赛选手中排名前 	1%，通过运用 	Python 	建模能力进行大
+规模数据清洗与量化因子挖掘，实现比赛模型收益率超 	50%，IC,IR 	指数排在前十。
+海德学院篮球队 	| 	队长 	(2021.08 	- 	2023.11)
+ 	优化团队战略协作并达成赛事预期目标，成功领导 	18 	人规模团队完成赛季博弈，通过为对手建立能力画像并
+制定数字化战术储备，展现了卓越的资源统筹与领导力。
+UPDF 	| 	内容运营与 	SEO 	实习生 	(2024.09 	- 	2024.12)
+ 	提升国际化品牌在搜索引擎的曝光维度，优化了核心关键词的搜索排名，通过执行 	SEO 	策略与内容矩阵策划，
+协同推动国际化项目的传播闭环。
+自我评价
+我是一位具备数据洞察力与国际化传播视野的综合型人才。 	凭借在香港的学习背景及自媒体实战经验，我能够
+精准链接峰会与大众，用数字化手段讲好企业社会责任 	(CSR) 	的故事，为 	2025 	福布斯中国 	ESG 	峰会贡献大
+使力量。
+技能证书
+ 	语言与国际化：雅思 	6.5 	分 	；具备扎实的跨文化沟通能力，能够胜任国际化峰会中的外宾接待与商务撮合
+(Stakeholder 	Engagement)。
+ 	计算机与数字化：熟练使用 	Python、Matlab、R 	语言等 	；具备将复杂数据转化为可持续发展 	(Sustainability) 	洞
+察的量化能力。
+ 	综合素养：具备敏锐的网络嗅觉与社会责任感 	(ESG 	Awareness) 	；擅长利用自媒体渠道进行品牌声誉管理，
+具备极强的项目执行与抗压能力。
+
+-- 1 of 1 --",,manual,extracted,,,2026-04-25 13:57:56.785,2026-04-25 13:58:31.011
+cmoeerasq0004l204e2vd3gb0,cmoeeraqt0000l204mklaix1j,cmoeerark0002l204aq5242ws,resume,resume,,Lavine-cv-esg .pdf,," 	主修课程：数学分析、高等代数、时间序列分析、数据科学、统计建模、计算机视觉、网络安全、NLP 	等。
+Lavine
+出生年月：2001.2 	地址：深圳/香港
+联系电话：18816493987 	& 	56641096 	邮箱：lavinexie@foxmail.com
+教育背景
+2025.09-至今 	香港城市大学 	计算机科学 	| 	硕士
+2020.09-2024.6 	中国海洋大学 	数学与应用数学 	| 	本科
+职业经历与项目实践
+自媒体创作者 	| 	抖音 	(字节跳动) 	(2021.08 	- 	至今)
+ 	成功提升账号品牌传播力与用户互动率，实现单条视频浏览量突破 	40,000 	次、点赞超 	21,000 	次，通过建立
+同类竞品数据追踪模型，针对性优化选题与推流策略。
+ 	驱动数字化内容增长，沉淀了一套基于数据反馈的受众洞察方法论，通过打磨视频细节并深度应用平台流量算
+法，精准触达目标用户群体。
+PandaAI 	量化因子大赛 	| 	亚军选手 	(2025.12 	- 	2026.2)
+ 	在高强度金融技术竞赛中获得全国亚军，在数千名参赛选手中排名前 	1%，通过运用 	Python 	建模能力进行大
+规模数据清洗与量化因子挖掘，实现比赛模型收益率超 	50%，IC,IR 	指数排在前十。
+海德学院篮球队 	| 	队长 	(2021.08 	- 	2023.11)
+ 	优化团队战略协作并达成赛事预期目标，成功领导 	18 	人规模团队完成赛季博弈，通过为对手建立能力画像并
+制定数字化战术储备，展现了卓越的资源统筹与领导力。
+UPDF 	| 	内容运营与 	SEO 	实习生 	(2024.09 	- 	2024.12)
+ 	提升国际化品牌在搜索引擎的曝光维度，优化了核心关键词的搜索排名，通过执行 	SEO 	策略与内容矩阵策划，
+协同推动国际化项目的传播闭环。
+自我评价
+我是一位具备数据洞察力与国际化传播视野的综合型人才。 	凭借在香港的学习背景及自媒体实战经验，我能够
+精准链接峰会与大众，用数字化手段讲好企业社会责任 	(CSR) 	的故事，为 	2025 	福布斯中国 	ESG 	峰会贡献大
+使力量。
+技能证书
+ 	语言与国际化：雅思 	6.5 	分 	；具备扎实的跨文化沟通能力，能够胜任国际化峰会中的外宾接待与商务撮合
+(Stakeholder 	Engagement)。
+ 	计算机与数字化：熟练使用 	Python、Matlab、R 	语言等 	；具备将复杂数据转化为可持续发展 	(Sustainability) 	洞
+察的量化能力。
+ 	综合素养：具备敏锐的网络嗅觉与社会责任感 	(ESG 	Awareness) 	；擅长利用自媒体渠道进行品牌声誉管理，
+具备极强的项目执行与抗压能力。
+
+-- 1 of 1 --"," 	主修课程：数学分析、高等代数、时间序列分析、数据科学、统计建模、计算机视觉、网络安全、NLP 	等。
+Lavine
+出生年月：2001.2 	地址：深圳/香港
+联系电话：18816493987 	& 	56641096 	邮箱：lavinexie@foxmail.com
+教育背景
+2025.09-至今 	香港城市大学 	计算机科学 	| 	硕士
+2020.09-2024.6 	中国海洋大学 	数学与应用数学 	| 	本科
+职业经历与项目实践
+自媒体创作者 	| 	抖音 	(字节跳动) 	(2021.08 	- 	至今)
+ 	成功提升账号品牌传播力与用户互动率，实现单条视频浏览量突破 	40,000 	次、点赞超 	21,000 	次，通过建立
+同类竞品数据追踪模型，针对性优化选题与推流策略。
+ 	驱动数字化内容增长，沉淀了一套基于数据反馈的受众洞察方法论，通过打磨视频细节并深度应用平台流量算
+法，精准触达目标用户群体。
+PandaAI 	量化因子大赛 	| 	亚军选手 	(2025.12 	- 	2026.2)
+ 	在高强度金融技术竞赛中获得全国亚军，在数千名参赛选手中排名前 	1%，通过运用 	Python 	建模能力进行大
+规模数据清洗与量化因子挖掘，实现比赛模型收益率超 	50%，IC,IR 	指数排在前十。
+海德学院篮球队 	| 	队长 	(2021.08 	- 	2023.11)
+ 	优化团队战略协作并达成赛事预期目标，成功领导 	18 	人规模团队完成赛季博弈，通过为对手建立能力画像并
+制定数字化战术储备，展现了卓越的资源统筹与领导力。
+UPDF 	| 	内容运营与 	SEO 	实习生 	(2024.09 	- 	2024.12)
+ 	提升国际化品牌在搜索引擎的曝光维度，优化了核心关键词的搜索排名，通过执行 	SEO 	策略与内容矩阵策划，
+协同推动国际化项目的传播闭环。
+自我评价
+我是一位具备数据洞察力与国际化传播视野的综合型人才。 	凭借在香港的学习背景及自媒体实战经验，我能够
+精准链接峰会与大众，用数字化手段讲好企业社会责任 	(CSR) 	的故事，为 	2025 	福布斯中国 	ESG 	峰会贡献大
+使力量。
+技能证书
+ 	语言与国际化：雅思 	6.5 	分 	；具备扎实的跨文化沟通能力，能够胜任国际化峰会中的外宾接待与商务撮合
+(Stakeholder 	Engagement)。
+ 	计算机与数字化：熟练使用 	Python、Matlab、R 	语言等 	；具备将复杂数据转化为可持续发展 	(Sustainability) 	洞
+察的量化能力。
+ 	综合素养：具备敏锐的网络嗅觉与社会责任感 	(ESG 	Awareness) 	；擅长利用自媒体渠道进行品牌声誉管理，
+具备极强的项目执行与抗压能力。
+
+-- 1 of 1 --",,manual,extracted,,,2026-04-25 14:01:40.97,2026-04-25 14:02:13.358
+cmoeez0j20019l204iz8iz5hu,cmoeez0h50015l204plgfffa6,cmoeez0ht0017l2043tq52chv,resume,resume,,2026许人冰-业务与人资π型人才 V1.pdf,,"许人冰（女/中共党员/211本硕+985MBA）
+联系方式：13620220720 	|| 	E-mail：icerbxu@foxmail.com
+兼具业务操盘手（腾讯 	0→10 	亿+）与千亿级平台（美团、顺丰）人资中高管经验、成熟体系建设与变革+创业/企业咨询、
+领导过“运营+人资+产研”多职能的复合型领导者。擅长以业务视角诊断组织痛点，将人力资源战略与复杂业务深度咬合，
+通过战略解码、人才梯队建设、组织效能提升，在超大人员规模组织、中小规模企业等多类型企业实现“开着飞机修引擎”，
+具备驱动增长、推动变革、降本增效、攻坚人才、文化落地的实战能力。现强化 	AI 	能力与 	AI 	变革能力中。
+工作经历
+某科技公司（2025-至今） 	顾问/总裁助理兼hrvp
+担任多家公司的顾问，以顾问形式合作或担任全职高管，顾问工作先后涉及某 	AI 	公司的战略转型项目、某上市筹备期公
+司的组织变革项目、某咨询公司 	AI 	赋能项目、以工信部和中国电子学会 	AIGC 	专家参与认证课程体系建设。
+其中 	202505-202510 	全职加入某大模型应用集群的 	AI 	独角兽公司任职总裁助理兼 	HRVP，下属 	24 	人。
+1、落实AI战略：系统诊断并完成AI人才规划；调整人才结构、重构任职资格，引进AI产品高管、AI全栈技术人才、全员
+融入AI能力维度；通过组合策略遏制AI人才流失率和外招吸引力；推动在职员工的AI应用率。
+2、统筹组织变革：围绕AI能力建设保障高管落位、设计组织形态、盘点内部人才及激活、调整绩效管理机制等调优组织
+关系；协同COO“LTC+IPD”流程变革，实现敏捷项目型组织转型；整合售前铁三角能力体系化解资源冲突。
+3、AI降本增效：基于AI提效、人才结构调优和稳健经营目标，60天优化冗员冗岗和组织瘦身20%，月均降本超500万。
+美团（2021-2024） 	销售运营管理、人力资源管理（总监）
+汇报对象： 	L11 	BM 	总经理 	|组织关系：到店事业群/销售委员会 	|绩效：Top20%高潜，+期权激励
+核心职责：历任生态发展部运营负责人、BP 	千亿级事业群（服务 	5 	万员工）、兼销售委员会委员/秘书（跨业务决策平台）。
+1、人才体系升级：基于新战略统筹 	10 	业务线、4 	序列的角色指南（岗责体系、价值评估、职级标准）升级，开发与业务
+战略深度咬合的胜任力模型，并体系化融入人才选用（招聘、盘点）、育（人才发展、领导力）、留（述职、评价）。
+2、支撑竞争扩张：在业务高速扩张期，建立关键人才输送机制。新业务内生人才提升（3%→25%），战时关键战役干部
+输送率超 	20%（一线>70%）；搭建“战役指挥官”直播能力等专项，赋能百城作战与业绩增长（双旦战役百城破亿）。
+3、推动降本增效：在业务战略转型期，主导某业务线 	6000 	人精简至 	3200 	人的流程再造与提效专项，实现人员减半下营
+收逆增 	40%，新员工绩效提升 	15.8%。HPI 	绩效改进专项 	1590 	个业务单元降本 	3 	亿（绩效改善成功率 	51.4%）。
+4、文化落地：公司级文化升级“领导力原则”项目在业务体系的定制化、行为内化；在某高速增长的粗放型管理业务强
+化底线文化，统筹廉正培训专项、增强业务风险反馈机制与管理稽查，减少业务造假、腐败等事件。
+荣誉：美团最具业务价值培训项目奖；到店事业群长征之光职能奖；事业部最佳项目奖；下属获事业部 	Top10 	优秀员工。
+顺丰集团（2020-2021） 	顺丰大学校长/子公司总经理
+汇报对象：创始人&人才生态供应链处 	| 	岗位类型：集团人资高管/子公司总经理 	| 	绩效：绩优，+超额激励
+核心职责：主导企业大学数字化变革，用科技赋能 	60 	万人集团人才供应链提效提质，驱动组织能力与千亿级业务战略对
+齐。兼顺丰大学法人主体公司顺丰润泰管理咨询公司总经理，生态模式首年试点创收 	3000 	万。
+1、经营转型与模式孵化：对内提供顾问式服务、对外输出行业能力。以“教学-教研-科研”产教融合方案联合业务方打
+
+-- 1 of 2 --
+
+进校园市场，输出行业人才培养标准、顺丰班课程体系等，获教育部课题和教学成果奖；跑通模式为集团创收 	3000 	万。
+2、战略解码与组织保障：基于集团战略目标（协同 	CXO 	战略解码）完成前瞻性人才规划与策略，根据科技+驱动组织变
+革预测数字化、自动化战略组织需求，统管 	1.29 	亿预算并优化分配（倾斜内生发展、战略人才、数字化）。
+3、关键战略人才输送：核心梯队供应稳健，中高层储备培养 	500+人/年、1.3 	万个基层业务单元的经营者培养体量 	4000+
+人/年、校招双轨制年供 	2000+优才；自动化转型人才专项（近百亿亿投资业务战略）、SEP 	业务效能专项（创收 	87 	亿）。
+4、数字化与科技赋能：推动人才发展供应链数字化、学习平台建设及 	OMO 	双轨运营，6 	个月内完成 	9 	个版本迭代，6 	个
+月完成 	9 	个版本迭代，覆盖 	11 	个关键岗位人才发展全景应用、41 	个岗位序列学习地图覆盖；理论降本 	2000 	万+。
+荣誉：集团级绩优职能高管；教育部行指委教学成果奖（产教融合项目）、合作校企教授获地方人才百万补贴。
+蕉书科技（2018-2019） 	咨询顾问/联合创始人
+创办蕉书科技，主营数字化咨询和创新业务孵化，服务公司营收千万级增长；后受邀加入医盟信科分管运营&人资，主营
+互联网医院和医药电商，主导战略规划、融资和产业合作、股权设计与激励，完成融资 	2 	轮，跑通业务模式并营收破亿。
+退出后担任中钰资本（我资方）的投后顾问，为其所投天使轮/A 	轮公司提供战略咨询服务；个人作为独立商业顾问担任
+TCL 	业务顾问，为其成功孵化亿级营收业务。
+腾讯（2015-2018） 	腾讯教育/广告 	高级运营
+汇报对象：部门 	GM 	| 	岗位类型：产品/行业运营岗 	| 	绩效：绩优，+超额激励
+工作概述：在线教育部和社交广告部的行业负责人（2B/2C），多次从 	0 	到 	1 	打造行业生态，驱动业务指数级增长。
+1、从 	0 	破局（亿级营收操盘手）：孵化腾讯课堂的职业教育行业，营收从零破亿，ToB 	运营达成 	4 	大行业商家体量 	Top1，
+ToC 	运营实现精准用户增长数百万，构建行业级领先的生态竞争位。
+2、二次增长（十亿级营收操盘手）：转岗广告部孵化新行业，营收千万级→十亿级，打造标杆案例并形成可复制的解决
+方案。推动腾讯广告行业级数据产品上线，KA 	客户广告营销效能提升 	160%。
+荣誉：绩效突出者；GM 	闪电个人奖、项目奖；SNG 	总裁奖（项目奖）、SNG 	业务突破奖（商业化）。
+教育科研
+中国人民大学商学院 	首席人才官CHO高管班 	2023.12-2025.04
+西南大学（211/双一流） 	科研助理（国家社科基金课题） 	毕业后留校
+西南大学（211/双一流） 	思想政治教育，硕士（保研） 	2009.09-2012.07
+西南大学（211/双一流） 	思想政治教育，本科 	2005.09-2009.07
+附加信息
+在校经历：优秀毕业生，优秀标兵，省论文一等奖，主研 	1 	项市课题，参研 	1 	项国家社科基金子课题，参编出版物 	1 	部。
+公益经历：2008 	年顶岗支教 	1 	学期，汶川地震灾区；社区服务站志愿者；腾讯志愿者协会成员；长期资助贫困学生。
+
+-- 2 of 2 --","许人冰（女/中共党员/211本硕+985MBA）
+联系方式：13620220720 	|| 	E-mail：icerbxu@foxmail.com
+兼具业务操盘手（腾讯 	0→10 	亿+）与千亿级平台（美团、顺丰）人资中高管经验、成熟体系建设与变革+创业/企业咨询、
+领导过“运营+人资+产研”多职能的复合型领导者。擅长以业务视角诊断组织痛点，将人力资源战略与复杂业务深度咬合，
+通过战略解码、人才梯队建设、组织效能提升，在超大人员规模组织、中小规模企业等多类型企业实现“开着飞机修引擎”，
+具备驱动增长、推动变革、降本增效、攻坚人才、文化落地的实战能力。现强化 	AI 	能力与 	AI 	变革能力中。
+工作经历
+某科技公司（2025-至今） 	顾问/总裁助理兼hrvp
+担任多家公司的顾问，以顾问形式合作或担任全职高管，顾问工作先后涉及某 	AI 	公司的战略转型项目、某上市筹备期公
+司的组织变革项目、某咨询公司 	AI 	赋能项目、以工信部和中国电子学会 	AIGC 	专家参与认证课程体系建设。
+其中 	202505-202510 	全职加入某大模型应用集群的 	AI 	独角兽公司任职总裁助理兼 	HRVP，下属 	24 	人。
+1、落实AI战略：系统诊断并完成AI人才规划；调整人才结构、重构任职资格，引进AI产品高管、AI全栈技术人才、全员
+融入AI能力维度；通过组合策略遏制AI人才流失率和外招吸引力；推动在职员工的AI应用率。
+2、统筹组织变革：围绕AI能力建设保障高管落位、设计组织形态、盘点内部人才及激活、调整绩效管理机制等调优组织
+关系；协同COO“LTC+IPD”流程变革，实现敏捷项目型组织转型；整合售前铁三角能力体系化解资源冲突。
+3、AI降本增效：基于AI提效、人才结构调优和稳健经营目标，60天优化冗员冗岗和组织瘦身20%，月均降本超500万。
+美团（2021-2024） 	销售运营管理、人力资源管理（总监）
+汇报对象： 	L11 	BM 	总经理 	|组织关系：到店事业群/销售委员会 	|绩效：Top20%高潜，+期权激励
+核心职责：历任生态发展部运营负责人、BP 	千亿级事业群（服务 	5 	万员工）、兼销售委员会委员/秘书（跨业务决策平台）。
+1、人才体系升级：基于新战略统筹 	10 	业务线、4 	序列的角色指南（岗责体系、价值评估、职级标准）升级，开发与业务
+战略深度咬合的胜任力模型，并体系化融入人才选用（招聘、盘点）、育（人才发展、领导力）、留（述职、评价）。
+2、支撑竞争扩张：在业务高速扩张期，建立关键人才输送机制。新业务内生人才提升（3%→25%），战时关键战役干部
+输送率超 	20%（一线>70%）；搭建“战役指挥官”直播能力等专项，赋能百城作战与业绩增长（双旦战役百城破亿）。
+3、推动降本增效：在业务战略转型期，主导某业务线 	6000 	人精简至 	3200 	人的流程再造与提效专项，实现人员减半下营
+收逆增 	40%，新员工绩效提升 	15.8%。HPI 	绩效改进专项 	1590 	个业务单元降本 	3 	亿（绩效改善成功率 	51.4%）。
+4、文化落地：公司级文化升级“领导力原则”项目在业务体系的定制化、行为内化；在某高速增长的粗放型管理业务强
+化底线文化，统筹廉正培训专项、增强业务风险反馈机制与管理稽查，减少业务造假、腐败等事件。
+荣誉：美团最具业务价值培训项目奖；到店事业群长征之光职能奖；事业部最佳项目奖；下属获事业部 	Top10 	优秀员工。
+顺丰集团（2020-2021） 	顺丰大学校长/子公司总经理
+汇报对象：创始人&人才生态供应链处 	| 	岗位类型：集团人资高管/子公司总经理 	| 	绩效：绩优，+超额激励
+核心职责：主导企业大学数字化变革，用科技赋能 	60 	万人集团人才供应链提效提质，驱动组织能力与千亿级业务战略对
+齐。兼顺丰大学法人主体公司顺丰润泰管理咨询公司总经理，生态模式首年试点创收 	3000 	万。
+1、经营转型与模式孵化：对内提供顾问式服务、对外输出行业能力。以“教学-教研-科研”产教融合方案联合业务方打
+
+-- 1 of 2 --
+
+进校园市场，输出行业人才培养标准、顺丰班课程体系等，获教育部课题和教学成果奖；跑通模式为集团创收 	3000 	万。
+2、战略解码与组织保障：基于集团战略目标（协同 	CXO 	战略解码）完成前瞻性人才规划与策略，根据科技+驱动组织变
+革预测数字化、自动化战略组织需求，统管 	1.29 	亿预算并优化分配（倾斜内生发展、战略人才、数字化）。
+3、关键战略人才输送：核心梯队供应稳健，中高层储备培养 	500+人/年、1.3 	万个基层业务单元的经营者培养体量 	4000+
+人/年、校招双轨制年供 	2000+优才；自动化转型人才专项（近百亿亿投资业务战略）、SEP 	业务效能专项（创收 	87 	亿）。
+4、数字化与科技赋能：推动人才发展供应链数字化、学习平台建设及 	OMO 	双轨运营，6 	个月内完成 	9 	个版本迭代，6 	个
+月完成 	9 	个版本迭代，覆盖 	11 	个关键岗位人才发展全景应用、41 	个岗位序列学习地图覆盖；理论降本 	2000 	万+。
+荣誉：集团级绩优职能高管；教育部行指委教学成果奖（产教融合项目）、合作校企教授获地方人才百万补贴。
+蕉书科技（2018-2019） 	咨询顾问/联合创始人
+创办蕉书科技，主营数字化咨询和创新业务孵化，服务公司营收千万级增长；后受邀加入医盟信科分管运营&人资，主营
+互联网医院和医药电商，主导战略规划、融资和产业合作、股权设计与激励，完成融资 	2 	轮，跑通业务模式并营收破亿。
+退出后担任中钰资本（我资方）的投后顾问，为其所投天使轮/A 	轮公司提供战略咨询服务；个人作为独立商业顾问担任
+TCL 	业务顾问，为其成功孵化亿级营收业务。
+腾讯（2015-2018） 	腾讯教育/广告 	高级运营
+汇报对象：部门 	GM 	| 	岗位类型：产品/行业运营岗 	| 	绩效：绩优，+超额激励
+工作概述：在线教育部和社交广告部的行业负责人（2B/2C），多次从 	0 	到 	1 	打造行业生态，驱动业务指数级增长。
+1、从 	0 	破局（亿级营收操盘手）：孵化腾讯课堂的职业教育行业，营收从零破亿，ToB 	运营达成 	4 	大行业商家体量 	Top1，
+ToC 	运营实现精准用户增长数百万，构建行业级领先的生态竞争位。
+2、二次增长（十亿级营收操盘手）：转岗广告部孵化新行业，营收千万级→十亿级，打造标杆案例并形成可复制的解决
+方案。推动腾讯广告行业级数据产品上线，KA 	客户广告营销效能提升 	160%。
+荣誉：绩效突出者；GM 	闪电个人奖、项目奖；SNG 	总裁奖（项目奖）、SNG 	业务突破奖（商业化）。
+教育科研
+中国人民大学商学院 	首席人才官CHO高管班 	2023.12-2025.04
+西南大学（211/双一流） 	科研助理（国家社科基金课题） 	毕业后留校
+西南大学（211/双一流） 	思想政治教育，硕士（保研） 	2009.09-2012.07
+西南大学（211/双一流） 	思想政治教育，本科 	2005.09-2009.07
+附加信息
+在校经历：优秀毕业生，优秀标兵，省论文一等奖，主研 	1 	项市课题，参研 	1 	项国家社科基金子课题，参编出版物 	1 	部。
+公益经历：2008 	年顶岗支教 	1 	学期，汶川地震灾区；社区服务站志愿者；腾讯志愿者协会成员；长期资助贫困学生。
+
+-- 2 of 2 --",,manual,extracted,,,2026-04-25 14:07:40.91,2026-04-25 14:09:30.613
+cmoefcenf002vl204btskrez2,cmoeemhrd0000l20405yxh07k,cmoeemhrv0002l204nyfupqgf,evolution,ai_conversation,,分身进化对话,,"当前分身摘要：
+定位：香港城市大学计算机科学硕士 | 数据驱动型ESG与国际化传播实践者
+简介：具备数学与计算机交叉背景，拥有自媒体运营、量化竞赛、内容SEO等多领域实战经验，擅长用数据洞察结合数字化手段链接峰会与大众，聚焦ESG、可持续发展领域，致力于讲好企业社会责任故事。
+标签：[""ESG"",""量化建模"",""自媒体运营"",""国际化传播"",""SEO"",""计算机科学""]
+能力：[""Python"",""Matlab"",""R语言"",""量化因子挖掘"",""数据建模"",""SEO策略"",""内容矩阵策划"",""跨文化沟通"",""自媒体运营"",""受众洞察""]
+需求：[]
+
+---
+
+本轮 AI 对话：
+用户：我现在想深耕AI教育方面呃然后呢我的呃我现在有很多AI的想法并想去并且想去落地想找一个同路人
+AI：你现在是刚有AI教育方向的初步想法，还是已经到了要选具体落地场景（比如面向青少年的AI科普、职场人的AI技能提升这类）的阶段呀？另外你找同路人，是更看重对方有AI技术落地经验，还是懂教育产品设计、资源对接的能力呀？
+用户：我只要他有教育的经历就可以了
+AI：那你现在这个AI教育落地的想法，是已经确定了具体面向的人群（比如K12、职场人还是其他群体），还是还在筛选阶段呀？另外你这边现在能提供哪些支持来推进这件事呢？
+用户：我有很强的技术激情以及落地的决心我也是工程师出身
+AI：那你现在这个AI教育项目，是已经到了要设计具体课程体系、敲定落地形式的阶段，还是还在做前期方向验证呀？另外你作为工程师出身，现在能提供哪些具体的资源或者能力来推进这件事呢？","当前分身摘要：
+定位：香港城市大学计算机科学硕士 | 数据驱动型ESG与国际化传播实践者
+简介：具备数学与计算机交叉背景，拥有自媒体运营、量化竞赛、内容SEO等多领域实战经验，擅长用数据洞察结合数字化手段链接峰会与大众，聚焦ESG、可持续发展领域，致力于讲好企业社会责任故事。
+标签：[""ESG"",""量化建模"",""自媒体运营"",""国际化传播"",""SEO"",""计算机科学""]
+能力：[""Python"",""Matlab"",""R语言"",""量化因子挖掘"",""数据建模"",""SEO策略"",""内容矩阵策划"",""跨文化沟通"",""自媒体运营"",""受众洞察""]
+需求：[]
+
+---
+
+本轮 AI 对话：
+用户：我现在想深耕AI教育方面呃然后呢我的呃我现在有很多AI的想法并想去并且想去落地想找一个同路人
+AI：你现在是刚有AI教育方向的初步想法，还是已经到了要选具体落地场景（比如面向青少年的AI科普、职场人的AI技能提升这类）的阶段呀？另外你找同路人，是更看重对方有AI技术落地经验，还是懂教育产品设计、资源对接的能力呀？
+用户：我只要他有教育的经历就可以了
+AI：那你现在这个AI教育落地的想法，是已经确定了具体面向的人群（比如K12、职场人还是其他群体），还是还在筛选阶段呀？另外你这边现在能提供哪些支持来推进这件事呢？
+用户：我有很强的技术激情以及落地的决心我也是工程师出身
+AI：那你现在这个AI教育项目，是已经到了要设计具体课程体系、敲定落地形式的阶段，还是还在做前期方向验证呀？另外你作为工程师出身，现在能提供哪些具体的资源或者能力来推进这件事呢？",,manual,extracted,,,2026-04-25 14:18:05.739,2026-04-25 14:18:21.869
+cmoegjrae0004ii040or03pj9,cmoegjr8h0000ii04trn05hnn,cmoegjr920002ii04fzsxjbgb,manual,manual_text,,自我介绍,,某公司CEO,某公司CEO,,manual,extracted,,,2026-04-25 14:51:48.327,2026-04-25 14:51:52.268
+cmoegmw370001l704kooa16ca,cmoegjr8h0000ii04trn05hnn,cmoegjr920002ii04fzsxjbgb,evolution,ai_conversation,,分身进化对话,,"当前分身摘要：
+定位：某公司CEO
+简介：某公司CEO，负责公司整体运营与战略方向。
+标签：[]
+能力：[]
+需求：[]
+
+---
+
+用户补充：
+我需要抹除所有信息重新录入","当前分身摘要：
+定位：某公司CEO
+简介：某公司CEO，负责公司整体运营与战略方向。
+标签：[]
+能力：[]
+需求：[]
+
+---
+
+用户补充：
+我需要抹除所有信息重新录入",,manual,extracted,,,2026-04-25 14:54:14.516,2026-04-25 14:54:17.674
+cmoegn8rc0005l704ebvl07we,cmoegjr8h0000ii04trn05hnn,cmoegjr920002ii04fzsxjbgb,evolution,ai_conversation,,分身进化对话,,"当前分身摘要：
+定位：
+简介：
+标签：[]
+能力：[]
+需求：[]
+
+---
+
+本轮 AI 对话：
+用户：重新录入","当前分身摘要：
+定位：
+简介：
+标签：[]
+能力：[]
+需求：[]
+
+---
+
+本轮 AI 对话：
+用户：重新录入",,manual,extracted,,,2026-04-25 14:54:30.937,2026-04-25 14:54:35.403
+cmoeh8cms0004ib04rtqcptk6,cmoeh8cke0000ib04j7ggorvv,cmoeh8cla0002ib04o68vgeqq,manual,manual_text,,自我介绍,,我是ai工程师,我是ai工程师,,manual,extracted,,,2026-04-25 15:10:55.732,2026-04-25 15:11:00.969
+cmoeiswvz0001l704z92e611z,cmoeemhrd0000l20405yxh07k,cmoeemhrv0002l204nyfupqgf,evolution,ai_conversation,,分身进化对话,,"当前分身摘要：
+定位：香港城市大学计算机科学硕士 | 数据驱动型ESG与国际化传播实践者 | AI教育方向探索者
+简介：具备数学与计算机交叉背景，拥有自媒体运营、量化竞赛、内容SEO等多领域实战经验，擅长用数据洞察结合数字化手段链接峰会与大众，聚焦ESG、可持续发展领域，致力于讲好企业社会责任故事；当前正深耕AI教育方向，有诸多AI落地想法，工程师出身，具备强技术激情与落地决心，寻找有教育经历的同路人共同推进项目。
+标签：[""ESG"",""量化建模"",""自媒体运营"",""国际化传播"",""SEO"",""计算机科学"",""AI教育""]
+能力：[""Python"",""Matlab"",""R语言"",""量化因子挖掘"",""数据建模"",""SEO策略"",""内容矩阵策划"",""跨文化沟通"",""自媒体运营"",""受众洞察"",""AI技术落地"",""工程师能力""]
+需求：[""有教育经历的同路人共同推进AI教育落地项目""]","当前分身摘要：
+定位：香港城市大学计算机科学硕士 | 数据驱动型ESG与国际化传播实践者 | AI教育方向探索者
+简介：具备数学与计算机交叉背景，拥有自媒体运营、量化竞赛、内容SEO等多领域实战经验，擅长用数据洞察结合数字化手段链接峰会与大众，聚焦ESG、可持续发展领域，致力于讲好企业社会责任故事；当前正深耕AI教育方向，有诸多AI落地想法，工程师出身，具备强技术激情与落地决心，寻找有教育经历的同路人共同推进项目。
+标签：[""ESG"",""量化建模"",""自媒体运营"",""国际化传播"",""SEO"",""计算机科学"",""AI教育""]
+能力：[""Python"",""Matlab"",""R语言"",""量化因子挖掘"",""数据建模"",""SEO策略"",""内容矩阵策划"",""跨文化沟通"",""自媒体运营"",""受众洞察"",""AI技术落地"",""工程师能力""]
+需求：[""有教育经历的同路人共同推进AI教育落地项目""]",,manual,extracted,,,2026-04-25 15:54:54.72,2026-04-25 15:55:09.541
