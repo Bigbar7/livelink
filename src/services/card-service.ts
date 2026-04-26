@@ -147,6 +147,16 @@ export async function getPublicProfile(slug: string) {
     include: {
       user: {
         select: { displayName: true, role: true, city: true }
+      },
+      agent: {
+        select: {
+          sources: {
+            where: { sourceType: 'contact' },
+            select: { rawText: true },
+            orderBy: { createdAt: 'asc' },
+            take: 1
+          }
+        }
       }
     }
   });

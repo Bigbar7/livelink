@@ -79,6 +79,22 @@ describe('AgentCreator navigation copy', () => {
     expect(componentSource).toContain("setStep('matches')");
   });
 
+  it('returns discovery navigation to existing recommendation results after an icebreaker', () => {
+    expect(componentSource).toContain('const openDiscovery = () => {');
+    expect(componentSource).toContain('recommendations.length > 0');
+    expect(componentSource).toContain('profileNeeds.length > 0');
+    expect(componentSource).toContain('void findPeople(profileNeedsQuery);');
+    expect(componentSource).toContain("<BottomNav currentStep={step} onNavigate={setStep} onFindNavigate={openDiscovery} />");
+    expect(componentSource).toContain("onClick={onFindNavigate}");
+  });
+
+  it('keeps a restart search entry on the recommendation results page', () => {
+    expect(componentSource).toContain('const restartDiscovery = () => {');
+    expect(componentSource).toContain("setFindQuery(profileNeeds.join('\\n'));");
+    expect(componentSource).toContain('aria-label="重新搜索"');
+    expect(componentSource).toContain('onClick={restartDiscovery}');
+  });
+
   it('lets users move to the next recommended candidate from the detail page', () => {
     expect(componentSource).toContain('aria-label="查看下一个推荐"');
     expect(componentSource).toContain('showNextCandidate');
@@ -99,5 +115,11 @@ describe('AgentCreator navigation copy', () => {
     expect(componentSource).toContain('copyCandidateContact');
     expect(componentSource).toContain('aria-label="复制候选人联系方式"');
     expect(componentSource).toContain('candidate.contactHandle');
+  });
+
+  it('shows a demo-stage manual contact notice on candidate details', () => {
+    expect(componentSource).toContain('candidate-demo-notice');
+    expect(componentSource).toContain('现在是demo阶段，暂未实现agent自动化，请手动联系TA');
+    expect(styleSource).toContain('.candidate-demo-notice');
   });
 });

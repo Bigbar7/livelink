@@ -16,6 +16,12 @@ describe('AgentCreator recommendation search loading page', () => {
     expect(componentSource).toContain("setStep('find');");
   });
 
+  it('searches from the needs shown on the agent profile page', () => {
+    expect(componentSource).toContain('const activeFindQuery = nextFindQuery ?? findQuery;');
+    expect(componentSource).toContain('const discoveryInterests = [...profileNeeds, ...activeFindQuery.split');
+    expect(componentSource).toContain('const interests = Array.from(new Set(discoveryInterests)).slice(0, 8);');
+  });
+
   it('renders an Agent-to-Agent recommendation search loading experience', () => {
     expect(componentSource).toContain("step === 'searching'");
     expect(componentSource).toContain('aria-live="polite"');

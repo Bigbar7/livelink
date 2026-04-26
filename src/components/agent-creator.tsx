@@ -161,6 +161,74 @@ const agentTraceMessages = [
   }
 ];
 
+const internetCandidateSeeds: CandidateView[] = [
+  {
+    id: 'web-lin-che-ai-education',
+    userId: 'web-lin-che-ai-education',
+    name: '林澈',
+    role: '模拟公开信息：AI 教育创业者 / 学习产品设计',
+    avatar: '林',
+    tags: ['AI 教育', '学习产品', '知识图谱'],
+    score: 86,
+    reason: '模拟公开信息显示，林澈持续分享 AI Tutor、知识图谱和学习路径设计，与你想找 AI 教育落地伙伴的需求高度相关。',
+    offer: '公开资料摘要：关注 AI 教育产品从课程内容走向个性化学习系统，曾公开讨论学习反馈闭环、题库生成和教师工作流。',
+    topic: '邀请 TA 生成 Agent 后，先聊 AI 教育产品如何验证真实学习效果。',
+    contactHandle: ''
+  },
+  {
+    id: 'web-zhou-yining-open-source',
+    userId: 'web-zhou-yining-open-source',
+    name: '周以宁',
+    role: '模拟公开信息：开源社区运营 / 开发者关系',
+    avatar: '周',
+    tags: ['开源社区', '开发者关系', '技术传播'],
+    score: 81,
+    reason: '模拟公开信息显示，周以宁长期关注开源社区增长、开发者活动和技术内容传播，适合被邀请进来形成更完整的 Agent 画像。',
+    offer: '公开资料摘要：常分享开源项目冷启动、贡献者激励、技术文章分发和社区活动复盘。',
+    topic: '邀请 TA 生成 Agent 后，可以从开源社区如何让用户主动贡献切入。',
+    contactHandle: ''
+  },
+  {
+    id: 'web-chen-muyuan-global-growth',
+    userId: 'web-chen-muyuan-global-growth',
+    name: '陈牧远',
+    role: '模拟公开信息：出海增长顾问 / 内容渠道策略',
+    avatar: '陈',
+    tags: ['出海增长', '内容渠道', '商业化'],
+    score: 78,
+    reason: '模拟公开信息显示，陈牧远围绕海外获客、内容 SEO 和 SaaS 商业化输出较多，适合推荐给正在寻找增长与商业化经验的人。',
+    offer: '公开资料摘要：关注英文内容矩阵、Product Hunt 冷启动、独立站转化和 B2B SaaS 早期销售。',
+    topic: '邀请 TA 生成 Agent 后，围绕出海产品第一批高质量线索怎么来展开。',
+    contactHandle: ''
+  },
+  {
+    id: 'web-xu-zhiwei-enterprise-ai',
+    userId: 'web-xu-zhiwei-enterprise-ai',
+    name: '许知微',
+    role: '模拟公开信息：企业 AI 转型顾问 / 组织效能',
+    avatar: '许',
+    tags: ['企业 AI', '组织效能', 'AI 转型'],
+    score: 74,
+    reason: '模拟公开信息显示，许知微关注企业 AI 落地、组织流程重构和效率工具 adoption，适合邀请来补全企业侧视角。',
+    offer: '公开资料摘要：常讨论企业知识库、AI 工作流、组织协同和管理者如何衡量 AI 投入回报。',
+    topic: '邀请 TA 生成 Agent 后，可以先聊企业 AI 落地最大的阻力是什么。',
+    contactHandle: ''
+  }
+];
+
+function isInternetCandidate(candidate: CandidateView) {
+  return candidate.id.startsWith('web-');
+}
+
+function buildInternetCandidates(profileNeeds: string[], activeFindQuery: string) {
+  const discoveryText = [...profileNeeds, activeFindQuery].join(' ').toLowerCase();
+  const rankedSeeds = internetCandidateSeeds.filter((candidate) =>
+    candidate.tags.some((tag) => discoveryText.includes(tag.toLowerCase()))
+  );
+
+  return (rankedSeeds.length > 0 ? rankedSeeds : internetCandidateSeeds).slice(0, 2);
+}
+
 function parseJsonList(value?: string) {
   if (!value) return [];
   try {
@@ -306,6 +374,8 @@ export function AgentCreator() {
   const [error, setError] = useState('');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState('');
+  const [publicOrigin, setPublicOrigin] = useState('');
   const [isResettingPersonalInfo, setIsResettingPersonalInfo] = useState(false);
   const [editTab, setEditTab] = useState<EditTab>('basic');
   const [editNickname, setEditNickname] = useState('');
@@ -348,6 +418,8 @@ export function AgentCreator() {
   const persona = analysis.persona;
   const hasPersonaSignals = Boolean(persona.title || persona.description || tags[0] || icebreakers[0]);
   const contactHandle = contact.trim() || (nickname.trim() ? `@${nickname.trim()}` : `ID ${profile?.slug ?? 'agent'}`);
+  const publicProfilePath = profile ? `/u/${profile.slug}` : '';
+  const publicProfileUrl = publicProfilePath ? `${publicOrigin}${publicProfilePath}` : '';
   const sparseProfileHint = '资料还不够，继续补充后再生成';
   const hasGenerated = Boolean(generated);
   const creationChatCompleteness = creationChatState ? `${creationChatState.filledSlots.length}/6` : '0/6';
@@ -391,6 +463,7 @@ export function AgentCreator() {
   const selectedCandidateIndex = selectedCandidate ? recommendations.findIndex((candidate) => candidate.id === selectedCandidate.id) : -1;
   const nextCandidate = selectedCandidateIndex >= 0 ? recommendations[selectedCandidateIndex + 1] : undefined;
   const hasCandidateBrowsing = recommendations.length > 1;
+  const selectedCandidateIsInternet = Boolean(selectedCandidate && isInternetCandidate(selectedCandidate));
   const creationSubmitText = mode === 'chat' && creationChatState?.readiness === 'ready' ? '资料已足够，生成第一版' : agentInputCopy.submit;
   const activeText = useMemo(() => {
     if (mode === 'file') return fileText || (fileName ? `用户上传了文件：${fileName}` : '');
@@ -408,6 +481,8 @@ export function AgentCreator() {
   );
 
   useEffect(() => {
+    setPublicOrigin(window.location.origin);
+
     Promise.allSettled([
       readApi<CurrentSessionResponse>('/api/me'),
       readApi<AgentProfile[]>('/api/profiles?limit=12')
@@ -648,10 +723,12 @@ export function AgentCreator() {
     }
   };
 
-  const findPeople = async () => {
+  const findPeople = async (nextFindQuery?: string) => {
     if (!generated) return;
     setError('');
-    const interests = [...wants, ...findQuery.split(/[，,\s]+/)].filter(Boolean).slice(0, 8);
+    const activeFindQuery = nextFindQuery ?? findQuery;
+    const discoveryInterests = [...profileNeeds, ...activeFindQuery.split(/[，,\s]+/)].map((item) => item.trim()).filter(Boolean);
+    const interests = Array.from(new Set(discoveryInterests)).slice(0, 8);
     const search = new URLSearchParams({ userId: generated.user.id });
     interests.forEach((interest) => search.append('interest', interest));
 
@@ -660,14 +737,36 @@ export function AgentCreator() {
     try {
       const data = await readApi<RecommendationItem[]>(`/api/recommendations?${search.toString()}`);
       const candidates = data.map(profileToCandidate);
-      setRecommendations(candidates);
-      if (candidates[0]) setSelectedCandidate(candidates[0]);
+      const webCandidates = buildInternetCandidates(profileNeeds, activeFindQuery);
+      setRecommendations([...candidates, ...webCandidates]);
+      if (candidates[0] ?? webCandidates[0]) setSelectedCandidate(candidates[0] ?? webCandidates[0]);
       setConnectionFeedback('');
       setStep('matches');
     } catch (recommendationError) {
       setError(recommendationError instanceof Error ? recommendationError.message : '推荐失败');
       setStep('find');
     }
+  };
+
+  const openDiscovery = () => {
+    if (recommendations.length > 0) {
+      setStep('matches');
+      return;
+    }
+
+    if (profileNeeds.length > 0) {
+      const profileNeedsQuery = profileNeeds.join('\n');
+      setFindQuery(profileNeedsQuery);
+      void findPeople(profileNeedsQuery);
+      return;
+    }
+
+    setStep('find');
+  };
+
+  const restartDiscovery = () => {
+    setFindQuery(profileNeeds.join('\n'));
+    setStep('find');
   };
 
   const showNextCandidate = () => {
@@ -721,6 +820,13 @@ export function AgentCreator() {
     } catch {
       setConnectionFeedback('文案已复制，但连接请求暂时没有记录成功。你仍然可以先去外部发送。');
     }
+  };
+
+  const copyInviteMessage = async () => {
+    if (!selectedCandidate) return;
+    const message = buildInviteMessage(nickname, selectedCandidate, publicProfileUrl || publicProfilePath);
+    await navigator.clipboard?.writeText(message);
+    setConnectionFeedback('邀请文案已复制。你可以发给 TA，邀请对方生成自己的 Agent。');
   };
 
   const openProfileEditor = () => {
@@ -839,6 +945,18 @@ export function AgentCreator() {
     if (!candidate.contactHandle) return;
     void navigator.clipboard?.writeText(candidate.contactHandle);
     setConnectionFeedback('已复制对方联系方式。');
+  };
+
+  const openShareProfile = () => {
+    setShowProfileMenu(false);
+    setShareFeedback('');
+    setStep('share');
+  };
+
+  const copyPublicProfileLink = async () => {
+    if (!publicProfileUrl) return;
+    await navigator.clipboard?.writeText(publicProfileUrl);
+    setShareFeedback('公开链接已复制，可以直接发给别人。');
   };
 
   const openResetConfirm = () => {
@@ -1278,6 +1396,10 @@ export function AgentCreator() {
                     <b>编辑资料</b>
                     <span>更新分身主页内容</span>
                   </button>
+                  <button type="button" role="menuitem" onClick={openShareProfile}>
+                    <b>分享主页</b>
+                    <span>复制公开链接，让别人直接看到你</span>
+                  </button>
                   <button
                     type="button"
                     role="menuitem"
@@ -1366,8 +1488,11 @@ export function AgentCreator() {
                   <SummaryRow title="我能提供">{offers.join('、') || sparseProfileHint}</SummaryRow>
                   <SummaryRow title="我正在寻找">{profileNeeds.join('、') || sparseProfileHint}</SummaryRow>
                 </div>
-                <div className="sticky-actions profile-sticky-cta">
-                  <button className="primary-action lime" onClick={() => setStep('find')}>
+                <div className="sticky-actions profile-sticky-cta two">
+                  <button className="secondary-action" type="button" onClick={openShareProfile}>
+                    分享主页
+                  </button>
+                  <button className="primary-action lime" onClick={openDiscovery}>
                     让 Agent 帮我找人
                   </button>
                 </div>
@@ -1533,8 +1658,30 @@ export function AgentCreator() {
 
           {step === 'share' && profile && (
             <section className="share-screen">
-              <Header title="Share Card" action="↓" />
+              <Header
+                title="分享分身"
+                action={
+                  <button className="round-icon" type="button" aria-label="返回数字分身" onClick={() => setStep('card')}>
+                    ←
+                  </button>
+                }
+              />
               <div className="content">
+                <div className="share-link-card">
+                  <span className="share-kicker">PUBLIC PROFILE</span>
+                  <h2>让别人直接链接到你</h2>
+                  <p>这个链接会打开你的公开数字分身主页，对方不需要登录也能了解你是谁、能提供什么、正在寻找什么。</p>
+                  <code>{publicProfileUrl}</code>
+                  {shareFeedback && <small>{shareFeedback}</small>}
+                  <div className="share-action-row">
+                    <button className="primary-action lime" type="button" onClick={copyPublicProfileLink}>
+                      复制公开链接
+                    </button>
+                    <button className="secondary-action" type="button" onClick={() => window.open(publicProfilePath, '_blank', 'noopener,noreferrer')}>
+                      打开公开页
+                    </button>
+                  </div>
+                </div>
                 <div className="poster-card">
                   <span className="poster-brand">Livelink Agent</span>
                   <h2>{nickname}<br />{profile.headline}</h2>
@@ -1547,7 +1694,9 @@ export function AgentCreator() {
                   <div className="qr-box">SCAN</div>
                 </div>
                 <div className="sticky-actions">
-                  <button className="primary-action lime">保存 / 分享海报</button>
+                  <button className="primary-action lime" type="button" onClick={copyPublicProfileLink}>
+                    保存 / 分享海报
+                  </button>
                 </div>
               </div>
             </section>
@@ -1572,7 +1721,7 @@ export function AgentCreator() {
                   />
                 </label>
                 <div className="sticky-actions">
-                  <button className="primary-action lime" onClick={findPeople}>
+                  <button className="primary-action lime" onClick={() => findPeople()}>
                     生成推荐列表
                   </button>
                 </div>
@@ -1626,7 +1775,14 @@ export function AgentCreator() {
 
           {step === 'matches' && (
             <section className="matches-screen">
-              <Header title="Top Matches" action="↻" />
+              <Header
+                title="Top Matches"
+                action={
+                  <button className="round-icon" type="button" aria-label="重新搜索" title="重新搜索" onClick={restartDiscovery}>
+                    ↻
+                  </button>
+                }
+              />
               <div className="content">
                 <h2 className="page-title">
                   匹配
@@ -1652,26 +1808,39 @@ export function AgentCreator() {
                   </div>
                 </details>
                 <div className="candidate-list">
-                  {recommendations.map((candidate) => (
-                    <button
-                      className="candidate-card"
-                      key={candidate.id}
-                      onClick={() => {
-                        setSelectedCandidate(candidate);
-                        setStep('candidate');
-                      }}
-                    >
-                      <span className="candidate-avatar">{candidate.avatar}</span>
-                      <span className="candidate-main">
-                        <b>{candidate.name}</b>
-                        <small>{candidate.role}</small>
-                        <em>{candidate.reason}</em>
-                      </span>
-                      <strong className={recordedConnectionIds.includes(candidate.id) ? 'connection-status-pill' : ''}>
-                        {recordedConnectionIds.includes(candidate.id) ? '已记录' : `${candidate.score}%`}
-                      </strong>
-                    </button>
-                  ))}
+                  {recommendations.map((candidate) => {
+                    const isWebCandidate = isInternetCandidate(candidate);
+
+                    return (
+                      <button
+                        className={`candidate-card ${isWebCandidate ? 'web-candidate-card' : ''}`}
+                        key={candidate.id}
+                        onClick={() => {
+                          setSelectedCandidate(candidate);
+                          setStep('candidate');
+                        }}
+                      >
+                        <span className="candidate-avatar">{candidate.avatar}</span>
+                        <span className="candidate-main">
+                          <b>{candidate.name}</b>
+                          <small>{candidate.role}</small>
+                          <em>{candidate.reason}</em>
+                          {isWebCandidate && <span className="candidate-web-notice">未入驻 Livelink，可邀请 TA 生成 Agent</span>}
+                        </span>
+                        <strong
+                          className={
+                            isWebCandidate
+                              ? 'invite-status-pill'
+                              : recordedConnectionIds.includes(candidate.id)
+                                ? 'connection-status-pill'
+                                : ''
+                          }
+                        >
+                          {isWebCandidate ? '可邀请' : recordedConnectionIds.includes(candidate.id) ? '已记录' : `${candidate.score}%`}
+                        </strong>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </section>
@@ -1703,13 +1872,22 @@ export function AgentCreator() {
                     </div>
                   </div>
                   <div className="candidate-contact-strip">
-                    <span>{selectedCandidate.contactHandle ? `联系方式：${selectedCandidate.contactHandle}` : '联系方式待补充'}</span>
-                    {selectedCandidate.contactHandle && (
+                    <span>
+                      {selectedCandidateIsInternet
+                        ? 'TA 还未入驻 Livelink'
+                        : selectedCandidate.contactHandle
+                          ? `联系方式：${selectedCandidate.contactHandle}`
+                          : '联系方式待补充'}
+                    </span>
+                    {!selectedCandidateIsInternet && selectedCandidate.contactHandle && (
                       <button type="button" aria-label="复制候选人联系方式" onClick={() => copyCandidateContact(selectedCandidate)}>
                         复制
                       </button>
                     )}
                   </div>
+                  <p className="candidate-demo-notice">
+                    {selectedCandidateIsInternet ? '推荐来自互联网公开信息，邀请后可让 TA 生成自己的 Agent。' : '现在是demo阶段，暂未实现agent自动化，请手动联系TA'}
+                  </p>
                   <div className="tags">
                     {selectedCandidate.tags.slice(0, 3).map((tag) => (
                       <span key={tag}>{tag}</span>
@@ -1718,8 +1896,8 @@ export function AgentCreator() {
                 </div>
                 <div className="summary-card compact">
                   <SummaryRow title={`为什么推荐 · ${selectedCandidate.score}%`}>{selectedCandidate.reason}</SummaryRow>
-                  <SummaryRow title="他能提供">{selectedCandidate.offer}</SummaryRow>
-                  <SummaryRow title="建议聊什么">{selectedCandidate.topic}</SummaryRow>
+                  <SummaryRow title={selectedCandidateIsInternet ? '公开信息依据' : '他能提供'}>{selectedCandidate.offer}</SummaryRow>
+                  <SummaryRow title={selectedCandidateIsInternet ? '邀请切入点' : '建议聊什么'}>{selectedCandidate.topic}</SummaryRow>
                 </div>
                 <div className={hasCandidateBrowsing ? 'sticky-actions candidate-actions two' : 'sticky-actions'}>
                   {hasCandidateBrowsing && (
@@ -1727,8 +1905,8 @@ export function AgentCreator() {
                       {nextCandidate ? '下一个' : '回列表'}
                     </button>
                   )}
-                  <button className="primary-action lime" onClick={() => setStep('icebreaker')}>
-                    生成破冰话术
+                  <button className="primary-action lime" onClick={selectedCandidateIsInternet ? copyInviteMessage : () => setStep('icebreaker')}>
+                    {selectedCandidateIsInternet ? '复制邀请文案' : '生成破冰话术'}
                   </button>
                 </div>
               </div>
@@ -1763,7 +1941,7 @@ export function AgentCreator() {
             </section>
           )}
 
-          {showBottomNav && <BottomNav currentStep={step} onNavigate={setStep} />}
+          {showBottomNav && <BottomNav currentStep={step} onNavigate={setStep} onFindNavigate={openDiscovery} />}
             </>
           )}
         </div>
@@ -1831,6 +2009,12 @@ function buildIcebreaker(nickname: string, candidate: CandidateView, offers: str
   return `你好${candidate.name}，我是 ${displayName}。我刚在 Livelink 生成了自己的 Agent 名片，看到你在 ${candidate.tags[0] ?? candidate.role} 方向有相关经验，感觉我们可以聊聊「${candidate.topic}」。我这边能提供 ${offers.slice(0, 2).join('、') || '产品和 AI 应用落地经验'}，这是我的 Agent 名片：livelink.app/u/${displayName}-agent`;
 }
 
+function buildInviteMessage(nickname: string, candidate: CandidateView, profileUrl: string) {
+  const displayName = nickname.trim() || '我';
+  const inviteLink = profileUrl || 'Livelink';
+  return `你好，我是 ${displayName}。我在 Livelink 上生成了自己的 AI Agent，系统根据我的需求从互联网公开信息里推荐我认识你。看起来我们在「${candidate.tags[0] ?? candidate.topic}」方向可能有交集。你也可以生成一个 Agent，这样我们能更快了解彼此适合聊什么：${inviteLink}`;
+}
+
 function Header({ title, action }: { title: string; action: ReactNode }) {
   return (
     <div className="topbar">
@@ -1853,7 +2037,15 @@ function SummaryRow({ title, children }: { title: string; children: React.ReactN
   );
 }
 
-function BottomNav({ currentStep, onNavigate }: { currentStep: FlowStep; onNavigate: (step: FlowStep) => void }) {
+function BottomNav({
+  currentStep,
+  onNavigate,
+  onFindNavigate
+}: {
+  currentStep: FlowStep;
+  onNavigate: (step: FlowStep) => void;
+  onFindNavigate: () => void;
+}) {
   const activeKey =
     currentStep === 'input'
       ? 'create'
@@ -1873,7 +2065,7 @@ function BottomNav({ currentStep, onNavigate }: { currentStep: FlowStep; onNavig
         <b>◈</b>
         <span>分身</span>
       </button>
-      <button className={activeKey === 'find' ? 'active' : ''} onClick={() => onNavigate('find')}>
+      <button className={activeKey === 'find' ? 'active' : ''} onClick={onFindNavigate}>
         <b>⌕</b>
         <span>发现</span>
       </button>

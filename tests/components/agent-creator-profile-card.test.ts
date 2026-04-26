@@ -118,4 +118,16 @@ describe('AgentCreator profile card template', () => {
     expect(componentSource).toContain('id="reset-confirm-title"');
     expect(componentSource).not.toContain('id="edit-reset-confirm-title"');
   });
+
+  it('exposes a public share link for the digital clone without schema changes', () => {
+    expect(componentSource).toContain('publicProfileUrl');
+    expect(componentSource).toContain("`/u/${profile.slug}`");
+    expect(componentSource).toContain('copyPublicProfileLink');
+    expect(componentSource).toContain('复制公开链接');
+    expect(componentSource).toContain('打开公开页');
+    expect(componentSource).toContain("window.open(publicProfilePath, '_blank', 'noopener,noreferrer')");
+    expect(componentSource).toContain("setStep('share')");
+    expect(styleSource).toContain('.share-link-card');
+    expect(styleSource).toContain('.share-action-row');
+  });
 });

@@ -30,4 +30,34 @@ describe('AgentCreator matches A-to-A trace', () => {
     expect(styleSource).toContain('.connection-feedback');
     expect(styleSource).toContain('.connection-status-pill');
   });
+
+  it('mixes frontend-only internet candidates into the recommendation list without changing the API shape', () => {
+    expect(componentSource).toContain('const internetCandidateSeeds: CandidateView[] = [');
+    expect(componentSource).toContain("id: 'web-");
+    expect(componentSource).toContain('buildInternetCandidates(profileNeeds, activeFindQuery)');
+    expect(componentSource).toContain('setRecommendations([...candidates, ...webCandidates]);');
+  });
+
+  it('uses concrete mock internet candidates with public-information style summaries', () => {
+    expect(componentSource).toContain("name: '林澈'");
+    expect(componentSource).toContain("name: '周以宁'");
+    expect(componentSource).toContain("name: '陈牧远'");
+    expect(componentSource).toContain("name: '许知微'");
+    expect(componentSource).toContain('模拟公开信息');
+    expect(componentSource).toContain('开源社区');
+  });
+
+  it('marks internet candidates as invitational instead of enrolled agents', () => {
+    expect(componentSource).toContain("candidate.id.startsWith('web-')");
+    expect(componentSource).toContain('未入驻 Livelink，可邀请 TA 生成 Agent');
+    expect(componentSource).toContain('可邀请');
+    expect(componentSource).toContain('复制邀请文案');
+    expect(componentSource).toContain('推荐来自互联网公开信息');
+  });
+
+  it('styles internet candidate cards and invitation notices', () => {
+    expect(styleSource).toContain('.candidate-card.web-candidate-card');
+    expect(styleSource).toContain('.candidate-web-notice');
+    expect(styleSource).toContain('.candidate-card strong.invite-status-pill');
+  });
 });

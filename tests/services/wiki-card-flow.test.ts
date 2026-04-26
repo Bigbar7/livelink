@@ -55,6 +55,33 @@ describe('wiki and card flow', () => {
     await expect(getPublicProfile(draftCard.slug)).resolves.toBeNull();
   });
 
+  it('includes the published owner contact source for shared profile pages', async () => {
+    const { user, agent } = await createAgent({ displayName: 'Jun' });
+    await prisma.sourceDocument.create({
+      data: {
+        userId: user.id,
+        agentId: agent.id,
+        sourceKind: 'manual',
+        sourceType: 'contact',
+        rawText: '联系方式：wx_jun7'
+      }
+    });
+    const profile = await prisma.agentProfile.create({
+      data: {
+        userId: user.id,
+        agentId: agent.id,
+        slug: 'jun-shared-agent',
+        status: 'published',
+        headline: 'AI 社交名片产品 Builder',
+        bio: '在做 Livelink'
+      }
+    });
+
+    const publicProfile = await getPublicProfile(profile.slug);
+
+    expect(publicProfile?.agent.sources[0]?.rawText).toBe('联系方式：wx_jun7');
+  });
+
   it('generates wiki from confirmed knowledge only', async () => {
     const { user, agent } = await createAgent({ displayName: 'Jun' });
     const source = await addSourceDocument({ userId: user.id, agentId: agent.id, ...manualGrowthInput });
